@@ -9,4 +9,8 @@ const size_t MAX_CRIT_SIZE = 64;
 
 typedef char Node_t[MAX_CRIT_SIZE];
 
+void PrintElemInLog(char val[MAX_CRIT_SIZE]);
+
+#include "Libs\BinaryTree\BinaryTree.h"
+
 #endif //__SYM_AKINATOR__

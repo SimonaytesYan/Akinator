@@ -1,0 +1,18 @@
+digraph G{
+node[shape = record, fontsize = 14];
+splines = ortho
+info[label = "root = 0x161420"]
+Node161420[style = "filled,rounded", fillcolor = "#8F9EFF", label = "<i>161420 \n | <v>Животное \n | {<l> 161480 |<r>  1614E0}"]
+Node161420 -> Node161480[color = "blue"]
+Node161420 -> Node1614E0[color = "red"]
+Node161480[style = "filled,rounded", fillcolor = "#8F9EFF", label = "<i>161480 \n | <v>1,5 \n | {<l> 000000 |<r>  000000}"]
+Node1614E0[style = "filled,rounded", fillcolor = "#8F9EFF", label = "<i>1614E0 \n | <v>Ведёт матан \n | {<l> 161540 |<r>  1615A0}"]
+Node1614E0 -> Node161540[color = "blue"]
+Node1614E0 -> Node1615A0[color = "red"]
+Node161540[style = "filled,rounded", fillcolor = "#8F9EFF", label = "<i>161540 \n | <v>Математик \n | {<l> 000000 |<r>  000000}"]
+Node1615A0[style = "filled,rounded", fillcolor = "#8F9EFF", label = "<i>1615A0 \n | <v>Поёт \n | {<l> 161600 |<r>  161660}"]
+Node1615A0 -> Node161600[color = "blue"]
+Node1615A0 -> Node161660[color = "red"]
+Node161600[style = "filled,rounded", fillcolor = "#8F9EFF", label = "<i>161600 \n | <v>Алла Пугачёва \n | {<l> 000000 |<r>  000000}"]
+Node161660[style = "filled,rounded", fillcolor = "#8F9EFF", label = "<i>161660 \n | <v>Дед \n | {<l> 000000 |<r>  000000}"]
+}

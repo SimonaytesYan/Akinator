@@ -4,11 +4,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "Logging\Logging.h"
-#include "Errors.h"
+#include "..\Logging\Logging.h"
+#include "..\Errors.h"
 
-const char   COMAND_PROTOTYPE[] = "Dot GraphicDumps/dump%d -o GraphicDumps/Dump%d.png -T png";
-      int    GRAPHIC_DUMP_CNT   = 0;
+static const char   COMAND_PROTOTYPE[] = "Dot GraphicDumps/dump%d -o GraphicDumps/Dump%d.png -T png";
+static       int    GRAPHIC_DUMP_CNT   = 0;
 
 typedef struct Node 
 {
@@ -33,21 +33,29 @@ typedef struct Tree
     LogInfo   debug     = {};
 }Tree;
 
-int  TreeCheck(Tree* tree);
+static int  TreeCheck(Tree* tree);
 
-int  TreeConstructor(Tree* tree, int capacity, int line, const char* name, const char* function, const char* file);
+static int  TreeConstructor(Tree* tree, int capacity, int line, const char* name, const char* function, const char* file);
 
-int  TreeDtor(Tree* tree);
+static int  TreeDtor(Tree* tree);
 
-void DumpTree(Tree* tree, const char* function, const char* file, int line);
+static void DumpTree(Tree* tree, const char* function, const char* file, int line);
 
-void GraphicDump(Tree* tree);
+static void GraphicDump(Tree* tree);
 
-int  TreeInsert(Tree* tree, Node_t value, Node* after_which, Node** index = nullptr);
+static int  TreeInsertLeafRight(Tree* tree, const Node_t value, Node* after_which);
 
-int  TreeIterate(Tree* tree, Node** index);
+static int  TreeInsertLeafLeft(Tree* tree, const Node_t value, Node* after_which);
 
-void GraphicNodeDump(Node* node, FILE* fp)
+static int  TreeIterate(Tree* tree, Node** index);
+
+static void GraphicNodeDump(Node* node, FILE* fp);
+
+static void GraphicDump(Tree* tree);
+
+static void DumpNode(Node* node);
+
+static void GraphicNodeDump(Node* node, FILE* fp)
 {
     if (node == nullptr)
         return;
@@ -64,10 +72,9 @@ void GraphicNodeDump(Node* node, FILE* fp)
     GraphicNodeDump(node->right, fp);
 }
 
-
-void GraphicDump(Tree* tree)
+static void GraphicDump(Tree* tree)
 {
-    char name[20] = "";
+    char name[30] = "";
     sprintf(name, "GraphicDumps/dump%d", GRAPHIC_DUMP_CNT);
     FILE* fp = fopen(name, "w");
 
@@ -80,11 +87,9 @@ void GraphicDump(Tree* tree)
     if (tree->root == nullptr)
         return;
 
-    fprintf(fp, "info[label = \"root = 0x06%X\"]\n", tree->root);
+    fprintf(fp, "info[label = \"root = 0x%06X\"]\n", tree->root);
 
-    Node* root = tree->root;
-    GraphicNodeDump(tree->root->left, fp);
-    GraphicNodeDump(tree->root->right, fp);
+    GraphicNodeDump(tree->root, fp);
     
     fprintf(fp, "}");
 
@@ -102,7 +107,7 @@ void GraphicDump(Tree* tree)
     GRAPHIC_DUMP_CNT++;
 }
 
-void DumpNode(Node* node)
+static void DumpNode(Node* node)
 {
     if (node == nullptr)
         return;
@@ -118,7 +123,7 @@ void DumpNode(Node* node)
 
 #define DUMP_L(tree) DumpTree(tree, __PRETTY_FUNCTION__, __FILE__, __LINE__)
 
-void DumpTree(Tree* tree, const char* function, const char* file, int line)
+static void DumpTree(Tree* tree, const char* function, const char* file, int line)
 {
     LogPrintf("\nDump in %s(%d) in function %s\n", file, line, function);
 
@@ -150,7 +155,7 @@ void DumpTree(Tree* tree, const char* function, const char* file, int line)
     LogPrintf("}\n\n");
 }
 
-int TreeCheck(Tree* tree)
+static int TreeCheck(Tree* tree)
 {
     int error = 0;
     if (tree == nullptr)
@@ -170,9 +175,9 @@ int TreeCheck(Tree* tree)
     return error;
 }
 
-#define TreeCtor(tree, capacity)  TreeConstructor(tree, capacity, __LINE__, #tree, __PRETTY_FUNCTION__, __FILE__)
+#define TreeCtor(tree)  TreeConstructor(tree, __LINE__, #tree, __PRETTY_FUNCTION__, __FILE__)
 
-int TreeConstructor(Tree* tree, int capacity, int line, const char* name, const char* function, const char* file)
+static int TreeConstructor(Tree* tree, int line, const char* name, const char* function, const char* file)
 {
     LogAndParseErr(tree == nullptr, NULL_TREE_POINTER);
 
@@ -189,7 +194,7 @@ int TreeConstructor(Tree* tree, int capacity, int line, const char* name, const 
     return TreeCheck(tree);
 }
 
-void NodeDtor(Node* node)
+static void NodeDtor(Node* node)
 {
     if (node == nullptr)
         return;
@@ -203,7 +208,7 @@ void NodeDtor(Node* node)
     free(node);
 }
 
-int TreeDtor(Tree* tree)
+static int TreeDtor(Tree* tree)
 {
     TreeCheck(tree);
 
@@ -220,7 +225,7 @@ int TreeDtor(Tree* tree)
     return 0;
 }
 
-int TreeInsertListRight(Tree* tree, const Node_t value, Node* after_which)
+static int TreeInsertLeafRight(Tree* tree, const Node_t value, Node* after_which)
 {
     ReturnIfError(TreeCheck(tree));
     CHECK(after_which == nullptr, "after_which = nullptr", -1);
@@ -233,7 +238,7 @@ int TreeInsertListRight(Tree* tree, const Node_t value, Node* after_which)
     return 0;
 }
 
-int TreeInsertListLeft(Tree* tree, const Node_t value, Node* after_which)
+static int TreeInsertLeafLeft(Tree* tree, const Node_t value, Node* after_which)
 {
     ReturnIfError(TreeCheck(tree));
     CHECK(after_which == nullptr, "after_which = nullptr", -1);
@@ -245,7 +250,5 @@ int TreeInsertListLeft(Tree* tree, const Node_t value, Node* after_which)
 
     return 0;
 }
-
-
 
 #endif //__SYM_BINARY_TREE__
