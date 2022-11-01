@@ -7,6 +7,7 @@
 #include "..\Logging\Logging.h"
 #include "..\Errors.h"
 
+
 static const char   COMAND_PROTOTYPE[] = "Dot GraphicDumps/dump%d -o GraphicDumps/Dump%d.png -T png";
 static       int    GRAPHIC_DUMP_CNT   = 0;
 
@@ -17,6 +18,8 @@ typedef struct Node
     Node*  right = nullptr;
     Node*  prev  = nullptr;
 } Node;
+
+typedef void(*DFS_f)(Node* node, void*);
 
 typedef struct LogInfo 
 {
@@ -55,18 +58,37 @@ static void GraphicDump(Tree* tree);
 
 static void DumpNode(Node* node);
 
+static void DFS(Node* node, DFS_f f1, void* args1, DFS_f f2, void* args2, DFS_f f3, void* args3)
+{
+    if (node == nullptr)
+        return;
+
+    if (f1 != nullptr)
+        f1(node, args1);
+
+    DFS(node->left, f1, args1, f2, args2, f3, args3);
+
+    if (f2 != nullptr)
+        f2(node, args2);
+    
+    DFS(node->right, f1, args1, f2, args2, f3, args3);
+
+    if (f2 != nullptr)
+        f3(node, args3);
+}
+
 static void GraphicNodeDump(Node* node, FILE* fp)
 {
     if (node == nullptr)
         return;
 
-    fprintf(fp, "Node%06X[style = \"filled,rounded\", fillcolor = \"#8F9EFF\", label = \"<i>%06X \\n | <v>%s \\n | {<l> %06X |<r>  %06X}\"]\n",
+    fprintf(fp, "Node%06X[style = \"filled,rounded\", fillcolor = \"#B1FF9F\", label = \"{<i>%06X \\n | <v>%s \\n | { <l> %06X |<r>  %06X}}\"]\n",
                     node,                                                    node,      node->val,   node->left,   node->right);
     
     if (node->left != nullptr)
-        fprintf(fp, "Node%X -> Node%X[color = \"blue\"]\n", node, node->left);
+        fprintf(fp, "Node%X -> Node%X[xlabel = \"Да\"]\n", node, node->left);
     if (node->right != nullptr)
-        fprintf(fp, "Node%X -> Node%X[color = \"red\"]\n", node, node->right);
+        fprintf(fp, "Node%X -> Node%X[xlabel = \"Нет\"]\n", node, node->right);
 
     GraphicNodeDump(node->left, fp);
     GraphicNodeDump(node->right, fp);
