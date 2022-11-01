@@ -15,4 +15,6 @@ void PrintElemInLog(char val[MAX_CRIT_SIZE]);
 
 int SaveTreeInFile(Tree* tree, const char file_name[]);
 
+int GetTreeFromFile(Tree* tree, const char file_name[]);
+
 #endif //__SYM_AKINATOR__
