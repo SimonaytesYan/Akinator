@@ -13,4 +13,6 @@ void PrintElemInLog(char val[MAX_CRIT_SIZE]);
 
 #include "Libs\BinaryTree\BinaryTree.h"
 
+int SaveTreeInFile(Tree* tree, const char file_name[]);
+
 #endif //__SYM_AKINATOR__

@@ -26,9 +26,7 @@ int main()
 
     GraphicDump(&tree);
 
-    TreeDtor(&tree);
-
-    GraphicDump(&tree);
+    SaveTreeInFile(&tree, "Tree");
 
     printf("End");
     CloseHtmlLogFile();
