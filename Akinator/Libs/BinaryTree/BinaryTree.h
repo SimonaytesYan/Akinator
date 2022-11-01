@@ -52,35 +52,30 @@ static int  TreeInsertLeafLeft(Tree* tree, const Node_t value, Node* after_which
 
 static int  TreeIterate(Tree* tree, Node** index);
 
-static void GraphicNodeDump(Node* node, FILE* fp);
+static void DFS(Node* node, DFS_f pre_func, void* args1, DFS_f in_func, void* args2, DFS_f post_func, void* args3);
 
-static void GraphicDump(Tree* tree);
-
-static void DumpNode(Node* node);
-
-static void DFS(Node* node, DFS_f f1, void* args1, DFS_f f2, void* args2, DFS_f f3, void* args3)
+static void DFS(Node* node, DFS_f pre_func, void* args1, DFS_f in_func, void* args2, DFS_f post_func, void* args3)
 {
     if (node == nullptr)
         return;
 
-    if (f1 != nullptr)
-        f1(node, args1);
+    if (pre_func != nullptr)
+        pre_func(node, args1);
 
-    DFS(node->left, f1, args1, f2, args2, f3, args3);
+    DFS(node->left, pre_func, args1, in_func, args2, post_func, args3);
 
-    if (f2 != nullptr)
-        f2(node, args2);
+    if (in_func != nullptr)
+        in_func(node, args2);
     
-    DFS(node->right, f1, args1, f2, args2, f3, args3);
+    DFS(node->right, pre_func, args1, in_func, args2, post_func, args3);
 
-    if (f2 != nullptr)
-        f3(node, args3);
+    if (post_func != nullptr)
+        post_func(node, args3);
 }
 
-static void GraphicNodeDump(Node* node, FILE* fp)
-{
-    if (node == nullptr)
-        return;
+static void WriteNodeAndEdge(Node* node, void* fp_void)
+{ 
+    FILE* fp = (FILE*)fp_void;
 
     fprintf(fp, "Node%06X[style = \"filled,rounded\", fillcolor = \"#B1FF9F\", label = \"{<i>%06X \\n | <v>%s \\n | { <l> %06X |<r>  %06X}}\"]\n",
                     node,                                                    node,      node->val,   node->left,   node->right);
@@ -89,9 +84,6 @@ static void GraphicNodeDump(Node* node, FILE* fp)
         fprintf(fp, "Node%X -> Node%X[xlabel = \"Да\"]\n", node, node->left);
     if (node->right != nullptr)
         fprintf(fp, "Node%X -> Node%X[xlabel = \"Нет\"]\n", node, node->right);
-
-    GraphicNodeDump(node->left, fp);
-    GraphicNodeDump(node->right, fp);
 }
 
 static void GraphicDump(Tree* tree)
@@ -106,12 +98,12 @@ static void GraphicDump(Tree* tree)
 
     if (tree == nullptr) 
         return;
-    if (tree->root == nullptr)
-        return;
 
     fprintf(fp, "info[label = \"root = 0x%06X\"]\n", tree->root);
 
-    GraphicNodeDump(tree->root, fp);
+    DFS(tree->root, WriteNodeAndEdge, fp, 
+                    nullptr,          nullptr,
+                    nullptr,          nullptr);
     
     fprintf(fp, "}");
 
@@ -127,20 +119,6 @@ static void GraphicDump(Tree* tree)
     LogPrintf("<hr>");
 
     GRAPHIC_DUMP_CNT++;
-}
-
-static void DumpNode(Node* node)
-{
-    if (node == nullptr)
-        return;
-
-    LogPrintf("(");
-    PrintElemInLog(node->val);
-    
-    DumpNode(node->left);
-    DumpNode(node->right);
-
-    LogPrintf(")");
 }
 
 #define DUMP_L(tree) DumpTree(tree, __PRETTY_FUNCTION__, __FILE__, __LINE__)
@@ -172,9 +150,21 @@ static void DumpTree(Tree* tree, const char* function, const char* file, int lin
 
     LogPrintf("{\n");
 
-    DumpNode(tree->root);
+    DFS_f pre_function = [](Node* node, void*)
+                       { 
+                           LogPrintf("(");
+                           PrintElemInLog(node->val);
+                       };
+    DFS_f post_function = [](Node* node, void*)
+                        {
+                            LogPrintf(")");
+                        };
 
-    LogPrintf("}\n\n");
+    DFS(tree->root, pre_function,  nullptr,
+                    nullptr,       nullptr,
+                    post_function, nullptr);
+
+    LogPrintf("\n}\n\n");
 }
 
 static int TreeCheck(Tree* tree)
@@ -216,27 +206,22 @@ static int TreeConstructor(Tree* tree, int line, const char* name, const char* f
     return TreeCheck(tree);
 }
 
-static void NodeDtor(Node* node)
-{
-    if (node == nullptr)
-        return;
-
-    NodeDtor(node->left);
-    NodeDtor(node->right);
-
-    node->left  = nullptr;
-    node->right = nullptr;
-
-    free(node);
-}
-
 static int TreeDtor(Tree* tree)
 {
     TreeCheck(tree);
 
     Node* index = tree->root;
 
-    NodeDtor(tree->root);
+    DFS_f post_function = [](Node* node, void*)
+                            {
+                                node->left  = nullptr;
+                                node->right = nullptr;
+                            };
+
+    DFS(tree->root, nullptr,       nullptr,
+                    nullptr,       nullptr,
+                    post_function, nullptr);
+    
     tree->root = nullptr;
 
     tree->debug.file     = nullptr;

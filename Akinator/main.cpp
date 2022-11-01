@@ -4,6 +4,9 @@
 
 int main()
 {
+    OpenHtmlLogFile("Akinator.html");
+    printf("Start\n");
+
     Tree tree = {};
 
     TreeCtor(&tree);
@@ -19,5 +22,14 @@ int main()
     TreeInsertLeafLeft(&tree, "Алла Пугачёва", tree.root->right->right); 
     TreeInsertLeafRight(&tree, "Дед", tree.root->right->right);
 
+    DUMP_L(&tree);
+
     GraphicDump(&tree);
+
+    TreeDtor(&tree);
+
+    GraphicDump(&tree);
+
+    printf("End");
+    CloseHtmlLogFile();
 }
