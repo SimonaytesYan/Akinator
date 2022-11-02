@@ -5,5 +5,5 @@
 
 void init_console()
 {
-    setlocale(LC_ALL, "Rus");
+    setlocale(LC_ALL, "Russian");
 }

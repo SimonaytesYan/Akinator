@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "..\Logging\Logging.h"
-#include "..\Errors.h"
+#include "../Logging/Logging.h"
+#include "../Errors.h"
 
 
 static const char   COMAND_PROTOTYPE[] = "Dot GraphicDumps/dump%d -o GraphicDumps/Dump%d.png -T png";
@@ -187,7 +187,7 @@ static int TreeCheck(Tree* tree)
     return error;
 }
 
-#define TreeCtor(tree)  TreeConstructor(tree, __LINE__, #tree, __PRETTY_FUNCTION__, __FILE__)
+#define TreeCtor(tree) TreeConstructor(tree, __LINE__, #tree, __PRETTY_FUNCTION__, __FILE__)
 
 static int TreeConstructor(Tree* tree, int line, const char* name, const char* function, const char* file)
 {
