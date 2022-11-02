@@ -36,29 +36,31 @@ void GetNodeFromFile(Node* node, void* fp_void)
 {
     FILE* fp = (FILE*)fp_void;
 
-    char block[50] = "";
-    fscanf(fp, "%s" , block);
-    printf("block = <%s>\n", block);
+    int c = getc(fp);
+    while(c != '{' && c != EOF)
+        c = getc(fp);
 
-    int k = 0;
-    scanf("%d",&k);
+    if (c == EOF) return;
 
-    if (stricmp(block, "{") == 0)
+    int i = 0;
+    while ((c = getc(fp)) != '{' && c != EOF && c != '}')
     {
-        fscanf(fp, "%s", node->val);
+        node->val[i] = c;
+        i++;
+    }
 
-        fscanf(fp, "%s", block);
-        if (stricmp(block, "}") == 0)
-        {
-            node->left  = nullptr;
-            node->right = nullptr;
-        }
-        else
-        {
-            ungetc('{', fp);
-            node->left  = (Node*)calloc(sizeof(Node), 1);
-            node->right = (Node*)calloc(sizeof(Node), 1);
-        }
+    if (c == EOF) return;
+
+    if (c == '}')
+    {
+        node->left  = nullptr;
+        node->right = nullptr;
+    }
+    else
+    {
+        ungetc('{', fp);
+        node->left  = (Node*)calloc(sizeof(Node), 1);
+        node->right = (Node*)calloc(sizeof(Node), 1);
     }
 }
 
