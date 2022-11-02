@@ -2,11 +2,15 @@
 
 #include "Akinator.h"
 
+#include <unistd.h>
+
 #ifdef _WIN32
 #include "Libs/TXLib.h"
 #endif
 
 #define DEBUG
+
+static void GetLine(FILE* fp, char string[], int num);
 
 int StrCmpDifferenCases(const char* s1, const char* s2)
 {
@@ -81,7 +85,10 @@ void GetNodeFromFile(Node* node, void* fp_void)
     if (c == EOF) return;
 
     while((c = getc(fp)) == ' ') 
-    {};
+    {
+        if (c == EOF)
+            return;
+    };
     ungetc(c, fp);
 
     int i = 0;
@@ -98,7 +105,6 @@ void GetNodeFromFile(Node* node, void* fp_void)
         i--;
     }
     
-
     if (c == EOF) return;
 
     if (c == '}')
@@ -112,6 +118,52 @@ void GetNodeFromFile(Node* node, void* fp_void)
         node->left  = (Node*)calloc(sizeof(Node), 1);
         node->right = (Node*)calloc(sizeof(Node), 1);
     }
+}
+
+bool GetObjCriteria(Tree* tree, Node* node, char object[MAX_CRIT_SIZE])
+{
+    if (node == nullptr)
+        return false;
+    
+    if (node->left == nullptr && node->right == nullptr)
+    {
+        #ifdef DEBUG
+            printf("leaf    = <%s>\n", node->val);
+            int cmp_res = StrCmpDifferenCases(object, node->val);
+            printf("cmp_res = %d\n", cmp_res); 
+        #endif
+
+        if (StrCmpDifferenCases(object, node->val) == 0)
+        {
+            printf("%s - ", node->val);
+            return true;
+        }
+    }
+
+    bool result = false;
+
+    if (GetObjCriteria(tree, node->left, object))
+    {
+        printf("%s", node->val);
+
+        result = true;
+    }
+    else if (GetObjCriteria(tree, node->right, object))
+    {
+        printf("не %s", node->val);
+        
+        result = true;
+    }
+
+    if (result)
+    {
+        if (node == tree->root)
+            printf("\n");
+        else
+            printf(", ");
+    }
+
+    return result;
 }
 
 void RunAkinator()
@@ -132,7 +184,10 @@ void RunAkinator()
         int operation_mode = -2;
 
         while (operation_mode < -1 || operation_mode > 3)
+        {
             scanf("%d", &operation_mode);
+            printf("Oper_mode = %d\n", operation_mode);
+        }
 
         bool end_program = false;
         switch (operation_mode)
@@ -148,7 +203,17 @@ void RunAkinator()
 
             case 1:
             {
-                Akinate(&tree, tree.root);
+                printf("Введите объект, определение которого ты хочешь узнать\n");
+                char object[MAX_CRIT_SIZE] = "";
+                
+                GetLine(stdin, object, MAX_CRIT_SIZE);
+
+                #ifdef DEBUG
+                    printf("obj = <%s>\n", object);
+                #endif
+
+                if (!GetObjCriteria(&tree, tree.root, object))
+                    printf("Это не постижимо! Объект не найден в моей базе! Ты жулик!\n");
                 break;
             }
             
@@ -203,15 +268,46 @@ int GetTreeFromFile(Tree* tree, const char file_name[])
     return 0;
 }
 
+static void GetLine(FILE* fp, char string[], int num)
+{
+    fflush(fp);
+
+    fgets(string, num, fp);
+
+    char* new_line = strchr(string, '\n');
+    *new_line = '\0';
+}
+
+void AddNewObjectAndCrit(Tree* tree, Node* node)
+{
+    char new_obj[MAX_CRIT_SIZE] = "";
+    GetLine(stdin, new_obj, MAX_CRIT_SIZE);
+                
+    printf("Чем %s отличается от %s?\n", new_obj, node->val);
+
+    char new_criteria[MAX_CRIT_SIZE] = "";
+    GetLine(stdin, new_criteria, MAX_CRIT_SIZE);
+                
+    #ifdef DEBUG
+        printf("new_obj      = <%s>\n", new_obj);
+        printf("new_criteria = <%s>\n", new_criteria);
+    #endif
+
+    TreeInsertLeafLeft (tree, new_obj,   node);
+    TreeInsertLeafRight(tree, node->val, node);
+    
+    strcpy(node->val, new_criteria);
+
+}
+
 bool Akinate(Tree* tree, Node* node)
 {
     printf("%s?\n", node->val);
 
-    char answer[20] = "";
+    char answer[MAX_CRIT_SIZE] = "";
     while(true)
     {
-        fflush(stdin);
-        scanf("%s", answer);
+        GetLine(stdin, answer, MAX_CRIT_SIZE);
 
         #ifdef DEBUG
             printf("ans = <%s>\n", answer);
@@ -234,25 +330,7 @@ bool Akinate(Tree* tree, Node* node)
                 printf("Наконец-то достойный соперник! Наше стражение стало легендарным!\n"
                        "Кого ты загадал?\n");
 
-                char new_obj[MAX_CRIT_SIZE] = "";
-                fflush(stdin);
-                scanf("%s", new_obj);
-                
-                printf("Чем %s отличается от %s?\n", new_obj, node->val);
-
-                char new_criteria[MAX_CRIT_SIZE] = "";
-                fflush(stdin);
-                scanf("%s", new_criteria);
-                
-                #ifdef DEBUG
-                    printf("new_obj      = <%s>\n", new_obj);
-                    printf("new_criteria = <%s>\n", new_criteria);
-                #endif
-
-                TreeInsertLeafLeft (tree, new_obj,   node);
-                TreeInsertLeafRight(tree, node->val, node);
-                
-                strcpy(node->val, new_criteria);
+                AddNewObjectAndCrit(tree, node);
 
                 printf("Теперь я стал сильнее! В этот раз тебе не удасться победить!!!\n");
                 return true;

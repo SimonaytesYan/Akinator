@@ -220,6 +220,8 @@ static int TreeDtor(Tree* tree)
     
     DFS_f post_function = [](Node* node, void*)
                             {
+                                free(node->left);
+                                free(node->right);
                                 node->left  = nullptr;
                                 node->right = nullptr;
                             };
@@ -228,6 +230,7 @@ static int TreeDtor(Tree* tree)
                     nullptr,       nullptr,
                     post_function, nullptr);
     
+    free(tree->root);
     tree->root = nullptr;
 
     tree->debug.file     = nullptr;

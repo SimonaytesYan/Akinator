@@ -29,6 +29,8 @@ void GetNodeFromFile(Node* node, void* fp_void);
 
 int StrCmpDifferenCases(const char* s1, const char* s2);
 
+bool GetObjCriteria(Tree* tree, Node* node, char object[MAX_CRIT_SIZE]);
+
 void RunAkinator();
 
 #endif //__SYM_AKINATOR__
