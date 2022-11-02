@@ -1,14 +1,16 @@
 #ifndef __SYM_BINARY_TREE__
 #define __SYM_BINARY_TREE__
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+
 #include <stdlib.h>
 #include <string.h>
 
 #include "../Logging/Logging.h"
 #include "../Errors.h"
 
-
-static const char   COMAND_PROTOTYPE[] = "Dot GraphicDumps/dump%d -o GraphicDumps/Dump%d.png -T png";
+static const char   COMAND_PROTOTYPE[] = "dot GraphicDumps/dump%d -o GraphicDumps/Dump%d.png -T png";
 static       int    GRAPHIC_DUMP_CNT   = 0;
 
 typedef struct Node 
@@ -73,17 +75,21 @@ static void DFS(Node* node, DFS_f pre_func, void* args1, DFS_f in_func, void* ar
         post_func(node, args3);
 }
 
+
 static void WriteNodeAndEdge(Node* node, void* fp_void)
 { 
     FILE* fp = (FILE*)fp_void;
 
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wformat"
     fprintf(fp, "Node%06X[style = \"filled,rounded\", fillcolor = \"#B1FF9F\", label = \"{<i>%06X \\n | <v>%s \\n | { <l> %06X |<r>  %06X}}\"]\n",
-                    node,                                                    node,      node->val,   node->left,   node->right);
+                node,                                                                   node, node->val, node->left, node->right);
     
     if (node->left != nullptr)
-        fprintf(fp, "Node%X -> Node%X[xlabel = \"Да\"]\n", node, node->left);
+        fprintf(fp, "Node%06X -> Node%06X[xlabel = \"Да\"]\n", node, node->left);
     if (node->right != nullptr)
-        fprintf(fp, "Node%X -> Node%X[xlabel = \"Нет\"]\n", node, node->right);
+        fprintf(fp, "Node%06X -> Node%06X[xlabel = \"Нет\"]\n", node, node->right);
+    #pragma GCC diagnostic pop
 }
 
 static void GraphicDump(Tree* tree)
@@ -96,10 +102,13 @@ static void GraphicDump(Tree* tree)
     fprintf(fp, "node[shape = record, fontsize = 14];\n");
     fprintf(fp, "splines = ortho\n");
 
-    if (tree == nullptr) 
+    if (tree == nullptr)
         return;
 
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wformat"
     fprintf(fp, "info[label = \"root = 0x%06X\"]\n", tree->root);
+    #pragma GCC diagnostic pop
 
     DFS(tree->root, WriteNodeAndEdge, fp, 
                     nullptr,          nullptr,
@@ -109,11 +118,10 @@ static void GraphicDump(Tree* tree)
 
     fclose(fp);
 
-    char comand[50] = "";
+    char comand[100] = "";
     sprintf(comand, COMAND_PROTOTYPE, GRAPHIC_DUMP_CNT, GRAPHIC_DUMP_CNT);
     system(comand);
     
-    char path[50] = "";
     LogPrintf("<hr>");
     LogPrintf("<img src=\"GraphicDumps/Dump%d.png\">\n", GRAPHIC_DUMP_CNT);
     LogPrintf("<hr>");
@@ -155,7 +163,7 @@ static void DumpTree(Tree* tree, const char* function, const char* file, int lin
                            LogPrintf("(");
                            PrintElemInLog(node->val);
                        };
-    DFS_f post_function = [](Node* node, void*)
+    DFS_f post_function = [](Node*, void*)
                         {
                             LogPrintf(")");
                         };
@@ -175,7 +183,7 @@ static int TreeCheck(Tree* tree)
     else
     {
         if (tree->root == nullptr)
-            error != NULL_POINTER_TO_ROOT;
+            error |= NULL_POINTER_TO_ROOT;
         
         if (tree->debug.file     == nullptr) error |= DEBUG_FILE_DAMAGED;
         if (tree->debug.function == nullptr) error |= DEBUG_FUNCTION_DAMAGED;
@@ -209,9 +217,7 @@ static int TreeConstructor(Tree* tree, int line, const char* name, const char* f
 static int TreeDtor(Tree* tree)
 {
     TreeCheck(tree);
-
-    Node* index = tree->root;
-
+    
     DFS_f post_function = [](Node* node, void*)
                             {
                                 node->left  = nullptr;
@@ -257,5 +263,7 @@ static int TreeInsertLeafLeft(Tree* tree, const Node_t value, Node* after_which)
 
     return 0;
 }
+
+#pragma GCC diagnostic pop
 
 #endif //__SYM_BINARY_TREE__

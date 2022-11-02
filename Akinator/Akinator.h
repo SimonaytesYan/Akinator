@@ -23,6 +23,10 @@ bool Akinate(Tree* tree, Node* node);
 
 void InitAkinator(Tree* tree);
 
+void DeInitAkinator(Tree* tree);
+
+void GetNodeFromFile(Node* node, void* fp_void);
+
 int StrCmpDifferenCases(const char* s1, const char* s2);
 
 void RunAkinator();

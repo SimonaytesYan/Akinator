@@ -1,5 +1,10 @@
-#include "Akinator.h"
 #include <stdio.h>
+
+#include "Akinator.h"
+
+#ifdef _WIN32
+#include "Libs/TXLib.h"
+#endif
 
 #define DEBUG
 
@@ -19,6 +24,7 @@ void InitAkinator(Tree* tree)
     *tree = {};
     TreeCtor(tree);
     GetTreeFromFile(tree, DEFAULT_TREE_NAME);
+
     #ifdef DEBUG
         printf("%p\n", tree->root);
     #endif
@@ -45,14 +51,14 @@ int SaveTreeInFile(Tree* tree, const char file_name[])
     FILE* fp = fopen(file_name, "w");
     CHECK(fp == nullptr, "Error during open file", -1);
 
-    DFS_f pre_function = [](Node* node, void* fp)
+    DFS_f pre_function = [](Node* node, void* dfs_fp)
                        {
-                            fprintf((FILE*)fp, " { ");
-                            fprintf((FILE*)fp, node->val);
+                            fprintf((FILE*)dfs_fp, " { ");
+                            fprintf((FILE*)dfs_fp, "%s", node->val);
                        };
-    DFS_f post_function = [](Node* node, void* fp)
+    DFS_f post_function = [](Node*, void* dfs_fp)
                         {
-                            fprintf((FILE*)fp, " } \n");
+                            fprintf((FILE*)dfs_fp, " } \n");
                         };
 
     DFS(tree->root, pre_function,  fp,
@@ -81,7 +87,7 @@ void GetNodeFromFile(Node* node, void* fp_void)
     int i = 0;
     while ((c = getc(fp)) != '{' && c != EOF && c != '}')
     {
-        node->val[i] = c;
+        node->val[i] = (char)c;
         i++;
     }
 
@@ -131,27 +137,47 @@ void RunAkinator()
         bool end_program = false;
         switch (operation_mode)
         {
-        case -1:
-            end_program = true;
-            break;
-        case 0:
-        {
-            Akinate(&tree, tree.root);
-            break;
+            case -1:
+                end_program = true;
+                break;
+            case 0:
+            {
+                Akinate(&tree, tree.root);
+                break;
+            }
+
+            case 1:
+            {
+                Akinate(&tree, tree.root);
+                break;
+            }
+            
+            case 2:
+            {
+                Akinate(&tree, tree.root);
+                break;
+            }
+            
+            case 3:
+            {
+                GraphicDump(&tree);
+                char graphic_dump_file[70] = "";
+
+                #ifdef _WIN32
+                    sprintf(graphic_dump_file, ".\\GraphicDumps\\Dump%d.png", GRAPHIC_DUMP_CNT - 1);
+                #else
+                    sprintf(graphic_dump_file, "xdg-open GraphicDumps/Dump%d.png", GRAPHIC_DUMP_CNT - 1);
+                #endif
+
+                system(graphic_dump_file);
+
+                break;
+            }
+            default:
+                printf("Интересный у тебя operation mode, конечно...\n");
+                break;
         }
 
-        case 1:
-            Akinate(&tree, tree.root);
-            break;
-            
-        case 2:
-            Akinate(&tree, tree.root);
-            break;
-            
-        case 3:
-            GraphicDump(&tree);
-            break;
-        }
         if (end_program)
             break;
         
@@ -187,7 +213,7 @@ bool Akinate(Tree* tree, Node* node)
         fflush(stdin);
         scanf("%s", answer);
 
-        #ifdef DEВUG
+        #ifdef DEBUG
             printf("ans = <%s>\n", answer);
         #endif
 
@@ -218,7 +244,7 @@ bool Akinate(Tree* tree, Node* node)
                 fflush(stdin);
                 scanf("%s", new_criteria);
                 
-                #ifdef DEВUG
+                #ifdef DEBUG
                     printf("new_obj      = <%s>\n", new_obj);
                     printf("new_criteria = <%s>\n", new_criteria);
                 #endif
