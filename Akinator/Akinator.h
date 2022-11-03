@@ -29,7 +29,13 @@ void GetNodeFromFile(Node* node, void* fp_void);
 
 int StrCmpDifferenCases(const char* s1, const char* s2);
 
-bool GetObjCriteria(Tree* tree, Node* node, char object[MAX_CRIT_SIZE]);
+void PrintMaskCriteria(Tree* tree, Node* node, long long mask, int h);
+
+void AddNewObjectAndCrit(Tree* tree, Node* node);
+
+long long GetMaskObjCritetia(Tree* tree, Node* node, char object[MAX_CRIT_SIZE], int h);
+
+void GuessObject(Tree* tree);
 
 void RunAkinator();
 

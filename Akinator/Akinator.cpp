@@ -8,9 +8,41 @@
 #include "Libs/TXLib.h"
 #endif
 
-#define DEBUG
+//#define DEBUG
 
 static void GetLine(FILE* fp, char string[], int num);
+
+static int  CleanBuffer();
+
+int CleanBuffer()
+{
+	int cnt = 0;
+	while ((getchar()) != '\n') 
+		cnt++;
+	return cnt;
+}
+
+void GuessObject(Tree* tree)
+{
+    printf("Введите объект, определение которого ты хочешь узнать\n");\
+    char object[MAX_CRIT_SIZE] = "";
+    
+    GetLine(stdin, object, MAX_CRIT_SIZE);
+    #ifdef DEBUG
+        printf("obj = <%s>\n", object);
+    #endif
+
+    long long mask =  GetMaskObjCritetia(tree, tree->root, object, 0);
+
+    if (mask == 0)
+        printf("Это не постижимо! Объект не найден в моей базе! Ты жулик!\n");
+    else
+    {   
+        printf("%s - это", object);
+        PrintMaskCriteria(tree, tree->root, mask, 0);
+    }
+    printf("\n");
+}
 
 int StrCmpDifferenCases(const char* s1, const char* s2)
 {
@@ -120,10 +152,10 @@ void GetNodeFromFile(Node* node, void* fp_void)
     }
 }
 
-bool GetObjCriteria(Tree* tree, Node* node, char object[MAX_CRIT_SIZE])
+long long GetMaskObjCritetia(Tree* tree, Node* node, char object[MAX_CRIT_SIZE], int h)
 {
     if (node == nullptr)
-        return false;
+        return 0;
     
     if (node->left == nullptr && node->right == nullptr)
     {
@@ -135,35 +167,45 @@ bool GetObjCriteria(Tree* tree, Node* node, char object[MAX_CRIT_SIZE])
 
         if (StrCmpDifferenCases(object, node->val) == 0)
         {
-            printf("%s - ", node->val);
-            return true;
+            int answer = 1 << h;
+            return answer;
         }
+        return 0;
     }
 
-    bool result = false;
+    long long result = GetMaskObjCritetia(tree, node->left, object, h + 1);
 
-    if (GetObjCriteria(tree, node->left, object))
+    if (result != 0)
     {
-        printf("%s", node->val);
-
-        result = true;
+        result |= 1 << h;
+        return result;
     }
-    else if (GetObjCriteria(tree, node->right, object))
-    {
-        printf("не %s", node->val);
-        
-        result = true;
-    }
-
-    if (result)
-    {
-        if (node == tree->root)
-            printf("\n");
-        else
-            printf(", ");
-    }
+    result = GetMaskObjCritetia(tree, node->right, object, h + 1);
 
     return result;
+}
+
+void PrintMaskCriteria(Tree* tree, Node* node, long long mask, int h)
+{
+    if (node == nullptr)
+        return;
+    
+    if (mask & (1 << h))
+    {
+        if (tree->root != node)
+            printf(", ");
+        printf("%s", node->val);
+
+        PrintMaskCriteria(tree, node->left, mask, h + 1);
+    }
+    else
+    {
+        if (tree->root != node)
+            printf(",");
+        printf(" не %s ", node->val);
+
+        PrintMaskCriteria(tree, node->right, mask, h + 1);
+    }
 }
 
 void RunAkinator()
@@ -178,15 +220,18 @@ void RunAkinator()
                "0  - Угадать\n"
                "1  - Дать определение\n"
                "2  - Сравнение\n"
-               "3  - Графический дамп\n"
-               "В каком режиме запустить программу?\n");
+               "3  - Графический дамп\n");
 
         int operation_mode = -2;
-
+        
         while (operation_mode < -1 || operation_mode > 3)
         {
+            printf("В каком режиме запустить программу?\n");
             scanf("%d", &operation_mode);
-            printf("Oper_mode = %d\n", operation_mode);
+            CleanBuffer();
+            #ifdef DEBUG
+                printf("Oper_mode = %d\n", operation_mode);
+            #endif
         }
 
         bool end_program = false;
@@ -203,17 +248,7 @@ void RunAkinator()
 
             case 1:
             {
-                printf("Введите объект, определение которого ты хочешь узнать\n");
-                char object[MAX_CRIT_SIZE] = "";
-                
-                GetLine(stdin, object, MAX_CRIT_SIZE);
-
-                #ifdef DEBUG
-                    printf("obj = <%s>\n", object);
-                #endif
-
-                if (!GetObjCriteria(&tree, tree.root, object))
-                    printf("Это не постижимо! Объект не найден в моей базе! Ты жулик!\n");
+                GuessObject(&tree);
                 break;
             }
             
@@ -270,12 +305,21 @@ int GetTreeFromFile(Tree* tree, const char file_name[])
 
 static void GetLine(FILE* fp, char string[], int num)
 {
-    fflush(fp);
+    char* new_line_symb = nullptr;
+    do 
+    {
+        fgets(string, num, fp);
+        new_line_symb = strchr(string, '\n');
+        if (new_line_symb != nullptr)
+            *new_line_symb = '\0';
 
-    fgets(string, num, fp);
-
-    char* new_line = strchr(string, '\n');
-    *new_line = '\0';
+        #ifdef DEBUG
+            int len = strlen(string);
+            for(int i = 0; i < len; i++)
+                printf("%d ", string[i]);
+        #endif
+    }
+    while(new_line_symb == nullptr || strlen(string) == 0);
 }
 
 void AddNewObjectAndCrit(Tree* tree, Node* node)
