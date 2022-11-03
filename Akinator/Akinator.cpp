@@ -1,8 +1,8 @@
-#include <stdio.h>
+//#include <stdio.h>
 
 #include "Akinator.h"
 
-#include <unistd.h>
+//#include <unistd.h>
 
 #ifdef _WIN32
 #include "Libs/TXLib.h"
@@ -22,6 +22,91 @@ int CleanBuffer()
 	return cnt;
 }
 
+void KnowObjDiff(Tree* tree)
+{
+    printf("Введите объекты, которые ты хочешь сравнить\n");\
+    char object1[MAX_CRIT_SIZE] = "";
+    char object2[MAX_CRIT_SIZE] = "";
+    
+    long long mask1 = 0;
+    long long mask2 = 0;
+
+    printf("Первый объект: ");
+    while (true)
+    {
+        GetLine(stdin, object1, MAX_CRIT_SIZE);
+        mask1 = GetMaskObjCritetia(tree, tree->root, object1, 0);
+
+        if (mask1 != 0)
+            break;
+
+        printf("Ты ошибся. Этого объекта не существует. Введи ещё раз\n");
+    }
+
+    printf("Второй объект: ");
+    while (true)
+    {
+        GetLine(stdin, object2, MAX_CRIT_SIZE);
+        mask2 = GetMaskObjCritetia(tree, tree->root, object2, 0);
+        
+        if (mask2 != 0)
+            break;
+
+        printf("Ты ошибся. Этого объекта не существует. Введи ещё раз\n");
+    }
+
+    #ifdef DEBUG
+        printf("obj1 = <%s>\n", object1);
+        printf("obj2 = <%s>\n", object2);
+    #endif
+
+    /*if ((mask1 & 1LL) != (mask2 & 1LL))
+        printf("У %s и %s нет ничего общего.\n", object1, object2);
+    else
+    {
+        
+        PrintSameCrit(tree, tree->root, mask1, mask2, 0);
+    }
+    printf("Оба объекта ");*/
+
+    printf("%s и %s похожи тем, что ", object1, object2);
+
+    PrintDiffMaskCriteria(tree, tree->root, mask1, mask2, 0, object1, object2);
+    
+    printf("\n");
+}
+
+void PrintDiffMaskCriteria(Tree* tree, Node* node, int64_t mask1, int64_t mask2, int64_t h, char obj1[], char obj2[])
+{
+    if (node == nullptr)
+        return;
+
+    if ((mask1 & (1 << h)) != ((mask2) & (1 << h)))
+    {
+        printf("\n");
+
+        printf("Объект %s отличается от %s тем, что %s - ", obj1, obj2, obj1);
+        PrintMaskCriteria(node,  mask1, h);
+
+        printf("\n" "Зато %s, в отличие от %s ", obj2, obj1);
+        PrintMaskCriteria(node,  mask2, h);
+        return;
+    }
+
+    if (mask1 & (1 << h))
+    {
+        printf(" %s;", node->val);
+
+        PrintDiffMaskCriteria(tree, node->left, mask1, mask2, h + 1, obj1, obj2);
+    }
+    else
+    {
+        printf("не %s;", node->val);
+        
+        PrintDiffMaskCriteria(tree, node->right, mask1, mask2, h + 1, obj1, obj2);
+    }
+}
+
 void GuessObject(Tree* tree)
 {
     printf("Введите объект, определение которого ты хочешь узнать\n");\
@@ -39,7 +124,7 @@ void GuessObject(Tree* tree)
     else
     {   
         printf("%s - это", object);
-        PrintMaskCriteria(tree, tree->root, mask, 0);
+        PrintMaskCriteria(tree->root, mask, 0);
     }
     printf("\n");
 }
@@ -51,28 +136,6 @@ int StrCmpDifferenCases(const char* s1, const char* s2)
     #else
         return strcasecmp(s1, s2);
     #endif
-}
-
-void InitAkinator(Tree* tree)
-{
-    OpenHtmlLogFile("Akinator.html");
-    
-    *tree = {};
-    TreeCtor(tree);
-    GetTreeFromFile(tree, DEFAULT_TREE_NAME);
-
-    #ifdef DEBUG
-        printf("%p\n", tree->root);
-    #endif
-}
-
-void DeInitAkinator(Tree* tree)
-{
-    SaveTreeInFile(tree, DEFAULT_TREE_NAME);
-
-    TreeDtor(tree);
-
-    CloseHtmlLogFile();
 }
 
 void PrintElemInLog(char val[MAX_CRIT_SIZE])
@@ -152,7 +215,7 @@ void GetNodeFromFile(Node* node, void* fp_void)
     }
 }
 
-long long GetMaskObjCritetia(Tree* tree, Node* node, char object[MAX_CRIT_SIZE], int h)
+long long GetMaskObjCritetia(Tree* tree, Node* node, char object[MAX_CRIT_SIZE], long long h)
 {
     if (node == nullptr)
         return 0;
@@ -185,106 +248,21 @@ long long GetMaskObjCritetia(Tree* tree, Node* node, char object[MAX_CRIT_SIZE],
     return result;
 }
 
-void PrintMaskCriteria(Tree* tree, Node* node, long long mask, int h)
+void PrintMaskCriteria(Node* node, long long mask, long long h)
 {
     if (node == nullptr)
         return;
     
     if (mask & (1 << h))
     {
-        if (tree->root != node)
-            printf(", ");
-        printf("%s", node->val);
-
-        PrintMaskCriteria(tree, node->left, mask, h + 1);
+        printf(" %s;", node->val);
+        PrintMaskCriteria(node->left, mask, h + 1);
     }
     else
     {
-        if (tree->root != node)
-            printf(",");
-        printf(" не %s ", node->val);
-
-        PrintMaskCriteria(tree, node->right, mask, h + 1);
+        printf(" не %s;", node->val);
+        PrintMaskCriteria(node->right, mask, h + 1);
     }
-}
-
-void RunAkinator()
-{
-    Tree tree = {};
-    InitAkinator(&tree);
-    
-    while(true)
-    {
-        printf("Режимы:\n"
-               "-1 - Выход из программы\n" 
-               "0  - Угадать\n"
-               "1  - Дать определение\n"
-               "2  - Сравнение\n"
-               "3  - Графический дамп\n");
-
-        int operation_mode = -2;
-        
-        while (operation_mode < -1 || operation_mode > 3)
-        {
-            printf("В каком режиме запустить программу?\n");
-            scanf("%d", &operation_mode);
-            CleanBuffer();
-            #ifdef DEBUG
-                printf("Oper_mode = %d\n", operation_mode);
-            #endif
-        }
-
-        bool end_program = false;
-        switch (operation_mode)
-        {
-            case -1:
-                end_program = true;
-                break;
-            case 0:
-            {
-                Akinate(&tree, tree.root);
-                break;
-            }
-
-            case 1:
-            {
-                GuessObject(&tree);
-                break;
-            }
-            
-            case 2:
-            {
-                Akinate(&tree, tree.root);
-                break;
-            }
-            
-            case 3:
-            {
-                GraphicDump(&tree);
-                char graphic_dump_file[70] = "";
-
-                #ifdef _WIN32
-                    sprintf(graphic_dump_file, ".\\GraphicDumps\\Dump%d.png", GRAPHIC_DUMP_CNT - 1);
-                #else
-                    sprintf(graphic_dump_file, "xdg-open GraphicDumps/Dump%d.png", GRAPHIC_DUMP_CNT - 1);
-                #endif
-
-                system(graphic_dump_file);
-
-                break;
-            }
-            default:
-                printf("Интересный у тебя operation mode, конечно...\n");
-                break;
-        }
-
-        if (end_program)
-            break;
-        
-        printf("Начнём сначала!!!\n");
-    }
-
-    DeInitAkinator(&tree);
 }
 
 int GetTreeFromFile(Tree* tree, const char file_name[])
@@ -386,5 +364,84 @@ bool Akinate(Tree* tree, Node* node)
         }
         if (StrCmpDifferenCases(answer, "выход") == 0)
             return false;
+    }
+}
+
+void OutputGraphicDump(Tree* tree)
+{
+
+    GraphicDump(tree);
+
+    char graphic_dump_file[70] = "";
+    #ifdef _WIN32
+        sprintf(graphic_dump_file, ".\\GraphicDumps\\Dump%d.png", GRAPHIC_DUMP_CNT - 1);
+    #else
+        sprintf(graphic_dump_file, "xdg-open GraphicDumps/Dump%d.png", GRAPHIC_DUMP_CNT - 1);
+    #endif
+
+    system(graphic_dump_file);
+}
+
+void RunAkinator(Tree* tree)
+{
+    while(true)
+    {
+        printf("Режимы:\n"
+               "-1 - Выход из программы\n" 
+               "0  - Угадать\n"
+               "1  - Дать определение\n"
+               "2  - Сравнение\n"
+               "3  - Графический дамп\n");
+
+        int operation_mode = -2;
+        
+        while (operation_mode < -1 || operation_mode > 3)
+        {
+            printf("В каком режиме запустить программу?\n");
+            scanf("%d", &operation_mode);
+            CleanBuffer();
+            #ifdef DEBUG
+                printf("Oper_mode = %d\n", operation_mode);
+            #endif
+        }
+
+        bool end_program = false;
+        switch (operation_mode)
+        {
+            case -1:
+                end_program = true;
+                break;
+            case 0:
+            {
+                KnowObjDiff(tree);
+                break;
+            }
+
+            case 1:
+            {
+                GuessObject(tree);
+                break;
+            }
+            
+            case 2:
+            {
+                KnowObjDiff(tree);
+                break;
+            }
+            
+            case 3:
+            {
+                OutputGraphicDump(tree);
+                break;
+            }
+            default:
+                printf("Интересный у тебя operation mode, конечно...\n");
+                break;
+        }
+
+        if (end_program)
+            break;
+        
+        printf("Начнём сначала!!!\n");
     }
 }

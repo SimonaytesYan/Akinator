@@ -6,5 +6,16 @@
 
 int main()
 {
-    RunAkinator();
+    OpenHtmlLogFile("Akinator.html");
+
+    Tree tree = {};
+    TreeCtor(&tree);
+    GetTreeFromFile(&tree, DEFAULT_TREE_NAME);
+
+    RunAkinator(&tree);
+    
+    SaveTreeInFile(&tree, DEFAULT_TREE_NAME);
+    TreeDtor(&tree);
+
+    CloseHtmlLogFile();
 }
