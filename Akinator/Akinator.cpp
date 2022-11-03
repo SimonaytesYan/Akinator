@@ -1,8 +1,8 @@
-//#include <stdio.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <unistd.h>
 
 #include "Akinator.h"
-
-//#include <unistd.h>
 
 #ifdef _WIN32
 #include "Libs/TXLib.h"
@@ -10,9 +10,35 @@
 
 //#define DEBUG
 
+//!
+//!Work 
+//!
+#define VOICE_COMMANDS
+
+const char COMAND_PROTOTIPE[] = "echo \"%s\" | festival --language russian --tts";
+
 static void GetLine(FILE* fp, char string[], int num);
 
 static int  CleanBuffer();
+
+static void PrintWithVoiceInCmd(const char *const format, ...)
+{
+    va_list args;
+    va_start(args, format);
+
+    char output[MAX_CRIT_SIZE * MAX_CRIT_SIZE] = "";
+    vsprintf(output, format, args);
+
+    #ifdef VOICE_COMMANDS
+        char comand[MAX_CRIT_SIZE * MAX_CRIT_SIZE + MAX_CRIT_SIZE] = "";
+        sprintf(comand, COMAND_PROTOTIPE, output);
+        system(comand);
+    #endif
+
+    printf("%s", output);
+
+    va_end(args);
+}
 
 int CleanBuffer()
 {
@@ -24,14 +50,14 @@ int CleanBuffer()
 
 void KnowObjDiff(Tree* tree)
 {
-    printf("Введите объекты, которые ты хочешь сравнить\n");\
+    PrintWithVoiceInCmd("Введите объекты, которые ты хочешь сравнить\n");\
     char object1[MAX_CRIT_SIZE] = "";
     char object2[MAX_CRIT_SIZE] = "";
     
     long long mask1 = 0;
     long long mask2 = 0;
 
-    printf("Первый объект: ");
+    PrintWithVoiceInCmd("Первый объект: ");
     while (true)
     {
         GetLine(stdin, object1, MAX_CRIT_SIZE);
@@ -40,10 +66,10 @@ void KnowObjDiff(Tree* tree)
         if (mask1 != 0)
             break;
 
-        printf("Ты ошибся. Этого объекта не существует. Введи ещё раз\n");
+        PrintWithVoiceInCmd("Ты ошибся. Этого объекта не существует. Введи ещё раз\n");
     }
 
-    printf("Второй объект: ");
+    PrintWithVoiceInCmd("Второй объект: ");
     while (true)
     {
         GetLine(stdin, object2, MAX_CRIT_SIZE);
@@ -52,7 +78,7 @@ void KnowObjDiff(Tree* tree)
         if (mask2 != 0)
             break;
 
-        printf("Ты ошибся. Этого объекта не существует. Введи ещё раз\n");
+        PrintWithVoiceInCmd("Ты ошибся. Этого объекта не существует. Введи ещё раз\n");
     }
 
     #ifdef DEBUG
@@ -60,16 +86,7 @@ void KnowObjDiff(Tree* tree)
         printf("obj2 = <%s>\n", object2);
     #endif
 
-    /*if ((mask1 & 1LL) != (mask2 & 1LL))
-        printf("У %s и %s нет ничего общего.\n", object1, object2);
-    else
-    {
-        
-        PrintSameCrit(tree, tree->root, mask1, mask2, 0);
-    }
-    printf("Оба объекта ");*/
-
-    printf("%s и %s похожи тем, что ", object1, object2);
+    PrintWithVoiceInCmd("%s и %s похожи тем, что ", object1, object2);
 
     PrintDiffMaskCriteria(tree, tree->root, mask1, mask2, 0, object1, object2);
     
@@ -85,23 +102,23 @@ void PrintDiffMaskCriteria(Tree* tree, Node* node, int64_t mask1, int64_t mask2,
     {
         printf("\n");
 
-        printf("Объект %s отличается от %s тем, что %s - ", obj1, obj2, obj1);
+        PrintWithVoiceInCmd("Объект %s отличается от %s тем, что %s - ", obj1, obj2, obj1);
         PrintMaskCriteria(node,  mask1, h);
 
-        printf("\n" "Зато %s, в отличие от %s ", obj2, obj1);
+        PrintWithVoiceInCmd("\n" "Зато %s, в отличие от %s ", obj2, obj1);
         PrintMaskCriteria(node,  mask2, h);
         return;
     }
 
     if (mask1 & (1 << h))
     {
-        printf(" %s;", node->val);
+        PrintWithVoiceInCmd(" %s;", node->val);
 
         PrintDiffMaskCriteria(tree, node->left, mask1, mask2, h + 1, obj1, obj2);
     }
     else
     {
-        printf("не %s;", node->val);
+        PrintWithVoiceInCmd("не %s;", node->val);
         
         PrintDiffMaskCriteria(tree, node->right, mask1, mask2, h + 1, obj1, obj2);
     }
@@ -109,7 +126,7 @@ void PrintDiffMaskCriteria(Tree* tree, Node* node, int64_t mask1, int64_t mask2,
 
 void GuessObject(Tree* tree)
 {
-    printf("Введите объект, определение которого ты хочешь узнать\n");\
+    PrintWithVoiceInCmd("Введите объект, определение которого ты хочешь узнать\n");\
     char object[MAX_CRIT_SIZE] = "";
     
     GetLine(stdin, object, MAX_CRIT_SIZE);
@@ -120,10 +137,10 @@ void GuessObject(Tree* tree)
     long long mask =  GetMaskObjCritetia(tree, tree->root, object, 0);
 
     if (mask == 0)
-        printf("Это не постижимо! Объект не найден в моей базе! Ты жулик!\n");
+        PrintWithVoiceInCmd("Это не постижимо! Объект не найден в моей базе! Ты жулик!\n");
     else
     {   
-        printf("%s - это", object);
+        PrintWithVoiceInCmd("%s - это", object);
         PrintMaskCriteria(tree->root, mask, 0);
     }
     printf("\n");
@@ -255,12 +272,12 @@ void PrintMaskCriteria(Node* node, long long mask, long long h)
     
     if (mask & (1 << h))
     {
-        printf(" %s;", node->val);
+        PrintWithVoiceInCmd(" %s;", node->val);
         PrintMaskCriteria(node->left, mask, h + 1);
     }
     else
     {
-        printf(" не %s;", node->val);
+        PrintWithVoiceInCmd(" не %s;", node->val);
         PrintMaskCriteria(node->right, mask, h + 1);
     }
 }
@@ -305,7 +322,7 @@ void AddNewObjectAndCrit(Tree* tree, Node* node)
     char new_obj[MAX_CRIT_SIZE] = "";
     GetLine(stdin, new_obj, MAX_CRIT_SIZE);
                 
-    printf("Чем %s отличается от %s?\n", new_obj, node->val);
+    PrintWithVoiceInCmd("Чем %s отличается от %s?\n", new_obj, node->val);
 
     char new_criteria[MAX_CRIT_SIZE] = "";
     GetLine(stdin, new_criteria, MAX_CRIT_SIZE);
@@ -324,7 +341,7 @@ void AddNewObjectAndCrit(Tree* tree, Node* node)
 
 bool Akinate(Tree* tree, Node* node)
 {
-    printf("%s?\n", node->val);
+    PrintWithVoiceInCmd("%s?\n", node->val);
 
     char answer[MAX_CRIT_SIZE] = "";
     while(true)
@@ -339,7 +356,7 @@ bool Akinate(Tree* tree, Node* node)
         {
             if (node->left == nullptr)
             {
-                printf("Это %s. Это было легко!!!\n", node->val);
+                PrintWithVoiceInCmd("Это %s. Это было легко!!!\n", node->val);
                 return true;
             }
 
@@ -349,12 +366,12 @@ bool Akinate(Tree* tree, Node* node)
         {
             if (node->right == nullptr)
             {
-                printf("Наконец-то достойный соперник! Наше стражение стало легендарным!\n"
+                PrintWithVoiceInCmd("Наконец-то достойный соперник! Наше стражение стало легендарным!\n"
                        "Кого ты загадал?\n");
 
                 AddNewObjectAndCrit(tree, node);
 
-                printf("Теперь я стал сильнее! В этот раз тебе не удасться победить!!!\n");
+                PrintWithVoiceInCmd("Теперь я стал сильнее! В этот раз тебе не удасться победить!!!\n");
                 return true;
             }
             else
@@ -386,7 +403,7 @@ void RunAkinator(Tree* tree)
 {
     while(true)
     {
-        printf("Режимы:\n"
+        PrintWithVoiceInCmd("Режимы:\n"
                "-1 - Выход из программы\n" 
                "0  - Угадать\n"
                "1  - Дать определение\n"
@@ -397,7 +414,7 @@ void RunAkinator(Tree* tree)
         
         while (operation_mode < -1 || operation_mode > 3)
         {
-            printf("В каком режиме запустить программу?\n");
+            PrintWithVoiceInCmd("В каком режиме запустить программу?\n");
             scanf("%d", &operation_mode);
             CleanBuffer();
             #ifdef DEBUG
@@ -413,7 +430,7 @@ void RunAkinator(Tree* tree)
                 break;
             case 0:
             {
-                KnowObjDiff(tree);
+                Akinate(tree, tree->root);
                 break;
             }
 
@@ -435,13 +452,13 @@ void RunAkinator(Tree* tree)
                 break;
             }
             default:
-                printf("Интересный у тебя operation mode, конечно...\n");
+                PrintWithVoiceInCmd("Интересный у тебя operation mode, конечно...\n");
                 break;
         }
 
         if (end_program)
             break;
         
-        printf("Начнём сначала!!!\n");
+        PrintWithVoiceInCmd("Начнём сначала!!!\n");
     }
 }
