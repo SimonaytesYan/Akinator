@@ -1,9 +1,16 @@
 #include <locale.h>
-#include <windows.h>
+#include <assert.h>
 
 #include "ConsoleSettings.h"
 
-void init_console()
+void InitConsole()
 {
     setlocale(LC_ALL, "Russian");
+}
+
+void ChangeColor(FILE* stream, size_t color)
+{
+    assert(stream != nullptr);
+
+    fprintf(stream, "\033[%ldm", color);
 }

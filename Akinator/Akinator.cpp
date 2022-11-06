@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include "Akinator.h"
+#include "Libs/ConsoleSettings/ConsoleSettings.h"
 
 #ifdef _WIN32
 #include "Libs/TXLib.h"
@@ -10,16 +12,30 @@
 
 //#define DEBUG
 
-//!
-//!Work 
-//!
-#define VOICE_COMMANDS
+//#define VOICE_COMMANDS
 
-const char COMAND_PROTOTIPE[] = "echo \"%s\" | festival --language russian --tts";
+const char  VOICE_COMAND_PROTOTIPE[] = "echo \"%s\" | festival --language russian --tts 2>console.log";
+const int   DENIALS_NUMBER           = 6;
+const char* DENIALS[]                = {"не",
+                                        "вообще не",
+                                        "ни сколько не",
+                                        "совсем не",
+                                        "не в каком месте не",
+                                        "ну вообще не",
+                                        };
 
 static void GetLine(FILE* fp, char string[], int num);
 
+static void PrintWithVoiceInCmd(const char *const format, ...);
+
 static int  CleanBuffer();
+
+static void PrintRandDenialCmd();
+
+static void PrintRandDenialCmd()
+{
+    PrintWithVoiceInCmd(DENIALS[rand()%DENIALS_NUMBER]);
+}
 
 static void PrintWithVoiceInCmd(const char *const format, ...)
 {
@@ -29,13 +45,18 @@ static void PrintWithVoiceInCmd(const char *const format, ...)
     char output[MAX_CRIT_SIZE * MAX_CRIT_SIZE] = "";
     vsprintf(output, format, args);
 
+    printf("%s", output);
+
     #ifdef VOICE_COMMANDS
         char comand[MAX_CRIT_SIZE * MAX_CRIT_SIZE + MAX_CRIT_SIZE] = "";
-        sprintf(comand, COMAND_PROTOTIPE, output);
+        sprintf(comand, VOICE_COMAND_PROTOTIPE, output);
+
+        #ifdef DEBUG
+            printf(comand);
+        #endif
+        
         system(comand);
     #endif
-
-    printf("%s", output);
 
     va_end(args);
 }
@@ -50,7 +71,7 @@ int CleanBuffer()
 
 void KnowObjDiff(Tree* tree)
 {
-    PrintWithVoiceInCmd("Введите объекты, которые ты хочешь сравнить\n");\
+    PrintWithVoiceInCmd("Введи объекты, которые ты хочешь сравнить\n");\
     char object1[MAX_CRIT_SIZE] = "";
     char object2[MAX_CRIT_SIZE] = "";
     
@@ -85,10 +106,19 @@ void KnowObjDiff(Tree* tree)
         printf("obj1 = <%s>\n", object1);
         printf("obj2 = <%s>\n", object2);
     #endif
-
-    PrintWithVoiceInCmd("%s и %s похожи тем, что ", object1, object2);
+    
+    PrintWithVoiceInCmd("**********************************\n");
+    ChangeColor(stdout, TURQUOISE);
+    PrintWithVoiceInCmd("%s", object1);
+    ChangeColor(stdout, DEFAULT);
+    PrintWithVoiceInCmd(" и ");
+    ChangeColor(stdout, TURQUOISE);
+    PrintWithVoiceInCmd("%s", object2);
+    ChangeColor(stdout, DEFAULT);
+    PrintWithVoiceInCmd(" похожи тем, что и тот и другой\n");
 
     PrintDiffMaskCriteria(tree, tree->root, mask1, mask2, 0, object1, object2);
+    PrintWithVoiceInCmd("**********************************\n");
     
     printf("\n");
 }
@@ -101,32 +131,59 @@ void PrintDiffMaskCriteria(Tree* tree, Node* node, int64_t mask1, int64_t mask2,
     if ((mask1 & (1 << h)) != ((mask2) & (1 << h)))
     {
         printf("\n");
+        PrintWithVoiceInCmd("Объект ");
+        ChangeColor(stdout, TURQUOISE);
+        PrintWithVoiceInCmd("%s", obj1);
+        ChangeColor(stdout, DEFAULT);
+        PrintWithVoiceInCmd(" отличается от ");
 
-        PrintWithVoiceInCmd("Объект %s отличается от %s тем, что %s - ", obj1, obj2, obj1);
+        ChangeColor(stdout, TURQUOISE);
+        PrintWithVoiceInCmd("%s", obj2);
+        ChangeColor(stdout, DEFAULT);
+        
+        PrintWithVoiceInCmd(" тем, что ");
+        
+        ChangeColor(stdout, TURQUOISE);
+        PrintWithVoiceInCmd("%s", obj1);
+        ChangeColor(stdout, DEFAULT);
+
+        PrintWithVoiceInCmd(" - ");
         PrintMaskCriteria(node,  mask1, h);
 
-        PrintWithVoiceInCmd("\n" "Зато %s, в отличие от %s ", obj2, obj1);
+        PrintWithVoiceInCmd("\n" "Зато ");
+
+        ChangeColor(stdout, TURQUOISE);
+        PrintWithVoiceInCmd("%s", obj2);
+        ChangeColor(stdout, DEFAULT);
+
+        PrintWithVoiceInCmd(", в отличие от ");
+
+        ChangeColor(stdout, TURQUOISE);
+        PrintWithVoiceInCmd("%s ", obj1);
+        ChangeColor(stdout, DEFAULT);
+
         PrintMaskCriteria(node,  mask2, h);
         return;
     }
 
     if (mask1 & (1 << h))
     {
-        PrintWithVoiceInCmd(" %s;", node->val);
+        PrintWithVoiceInCmd(" %s; ", node->val);
 
         PrintDiffMaskCriteria(tree, node->left, mask1, mask2, h + 1, obj1, obj2);
     }
     else
     {
-        PrintWithVoiceInCmd("не %s;", node->val);
+        PrintRandDenialCmd();
+        PrintWithVoiceInCmd(" %s; ", node->val);
         
         PrintDiffMaskCriteria(tree, node->right, mask1, mask2, h + 1, obj1, obj2);
     }
 }
 
-void GuessObject(Tree* tree)
+void DetermineObject(Tree* tree)
 {
-    PrintWithVoiceInCmd("Введите объект, определение которого ты хочешь узнать\n");\
+    PrintWithVoiceInCmd("Введи объект, определение которого ты хочешь узнать\n");\
     char object[MAX_CRIT_SIZE] = "";
     
     GetLine(stdin, object, MAX_CRIT_SIZE);
@@ -134,13 +191,23 @@ void GuessObject(Tree* tree)
         printf("obj = <%s>\n", object);
     #endif
 
-    long long mask =  GetMaskObjCritetia(tree, tree->root, object, 0);
+    long long mask = GetMaskObjCritetia(tree, tree->root, object, 0);
 
     if (mask == 0)
-        PrintWithVoiceInCmd("Это не постижимо! Объект не найден в моей базе! Ты жулик!\n");
+    {
+        PrintWithVoiceInCmd("Это не постижимо! ");
+        PrintWithVoiceInCmd("Объект не найден в моей базе! Ты ");
+        
+        ChangeColor(stdout, RED);
+        PrintWithVoiceInCmd("жулик!\n");
+        ChangeColor(stdout, DEFAULT);
+    }
     else
-    {   
-        PrintWithVoiceInCmd("%s - это", object);
+    {
+        ChangeColor(stdout, TURQUOISE);        
+        PrintWithVoiceInCmd("%s", object);
+        ChangeColor(stdout, DEFAULT);
+        PrintWithVoiceInCmd(" - это");
         PrintMaskCriteria(tree->root, mask, 0);
     }
     printf("\n");
@@ -277,7 +344,9 @@ void PrintMaskCriteria(Node* node, long long mask, long long h)
     }
     else
     {
-        PrintWithVoiceInCmd(" не %s;", node->val);
+        PrintWithVoiceInCmd(" ");
+        PrintRandDenialCmd();
+        PrintWithVoiceInCmd(" %s;", node->val);
         PrintMaskCriteria(node->right, mask, h + 1);
     }
 }
@@ -322,7 +391,19 @@ void AddNewObjectAndCrit(Tree* tree, Node* node)
     char new_obj[MAX_CRIT_SIZE] = "";
     GetLine(stdin, new_obj, MAX_CRIT_SIZE);
                 
-    PrintWithVoiceInCmd("Чем %s отличается от %s?\n", new_obj, node->val);
+    PrintWithVoiceInCmd("Чем ");
+    
+    ChangeColor(stdout, TURQUOISE);
+    PrintWithVoiceInCmd("%s", new_obj);
+    ChangeColor(stdout, DEFAULT); 
+    
+    PrintWithVoiceInCmd(" отличается от ");
+
+    ChangeColor(stdout, TURQUOISE);
+    PrintWithVoiceInCmd("%s", node->val);
+    ChangeColor(stdout, DEFAULT); 
+
+    PrintWithVoiceInCmd("?\n");
 
     char new_criteria[MAX_CRIT_SIZE] = "";
     GetLine(stdin, new_criteria, MAX_CRIT_SIZE);
@@ -356,7 +437,14 @@ bool Akinate(Tree* tree, Node* node)
         {
             if (node->left == nullptr)
             {
-                PrintWithVoiceInCmd("Это %s. Это было легко!!!\n", node->val);
+                PrintWithVoiceInCmd("Это ");
+                
+                ChangeColor(stdout, TURQUOISE);
+                PrintWithVoiceInCmd("%s", node->val);
+                ChangeColor(stdout, DEFAULT);
+
+                PrintWithVoiceInCmd(". Это было легко!!!\n");
+
                 return true;
             }
 
@@ -366,12 +454,14 @@ bool Akinate(Tree* tree, Node* node)
         {
             if (node->right == nullptr)
             {
-                PrintWithVoiceInCmd("Наконец-то достойный соперник! Наше стражение стало легендарным!\n"
-                       "Кого ты загадал?\n");
+                PrintWithVoiceInCmd("Наконец-то достойный соперник! ");
+                PrintWithVoiceInCmd("Наше стражение стало легендарным!\n");
+                PrintWithVoiceInCmd("Кого ты загадал?\n");
 
                 AddNewObjectAndCrit(tree, node);
 
-                PrintWithVoiceInCmd("Теперь я стал сильнее! В этот раз тебе не удасться победить!!!\n");
+                PrintWithVoiceInCmd("Теперь я стал сильнее! ");
+                PrintWithVoiceInCmd("В этот раз тебе не удасться победить!!!\n");
                 return true;
             }
             else
@@ -403,12 +493,29 @@ void RunAkinator(Tree* tree)
 {
     while(true)
     {
-        PrintWithVoiceInCmd("Режимы:\n"
-               "-1 - Выход из программы\n" 
-               "0  - Угадать\n"
-               "1  - Дать определение\n"
-               "2  - Сравнение\n"
-               "3  - Графический дамп\n");
+        PrintWithVoiceInCmd("**********************************\n");
+        PrintWithVoiceInCmd("Режимы:\n");
+        ChangeColor(stdout, GREEN);
+        PrintWithVoiceInCmd("-1");
+        ChangeColor(stdout, DEFAULT);
+        PrintWithVoiceInCmd(" - Выход из программы\n"); 
+        ChangeColor(stdout, GREEN);
+        PrintWithVoiceInCmd("0");
+        ChangeColor(stdout, DEFAULT);
+        PrintWithVoiceInCmd("  - Угадать\n");
+        ChangeColor(stdout, GREEN);
+        PrintWithVoiceInCmd("1");
+        ChangeColor(stdout, DEFAULT);
+        PrintWithVoiceInCmd("  - Дать определение\n");
+        ChangeColor(stdout, GREEN);
+        PrintWithVoiceInCmd("2");
+        ChangeColor(stdout, DEFAULT);
+        PrintWithVoiceInCmd("  - Сравнение\n");
+        ChangeColor(stdout, GREEN);
+        PrintWithVoiceInCmd("3");
+        ChangeColor(stdout, DEFAULT);
+        PrintWithVoiceInCmd("  - Графический дамп\n");
+        PrintWithVoiceInCmd("**********************************\n");
 
         int operation_mode = -2;
         
@@ -436,7 +543,7 @@ void RunAkinator(Tree* tree)
 
             case 1:
             {
-                GuessObject(tree);
+                DetermineObject(tree);
                 break;
             }
             
@@ -458,7 +565,7 @@ void RunAkinator(Tree* tree)
 
         if (end_program)
             break;
-        
-        PrintWithVoiceInCmd("Начнём сначала!!!\n");
+
+        sleep(1);
     }
 }

@@ -35,7 +35,7 @@ void KnowObjDiff(Tree* tree);
 
 void OutputGraphicDump(Tree* tree);
 
-void GuessObject(Tree* tree);
+void DetermineObject(Tree* tree);
 
 void RunAkinator(Tree* tree);
 

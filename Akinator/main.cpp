@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <locale.h>
+#include <time.h>
 
 #include "Libs/ConsoleSettings/ConsoleSettings.h"
 #include "Akinator.h"
@@ -7,6 +8,7 @@
 int main()
 {
     OpenHtmlLogFile("Akinator.html");
+    srand(time(0));
 
     Tree tree = {};
     TreeCtor(&tree);
