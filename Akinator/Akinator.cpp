@@ -148,7 +148,7 @@ void PrintDiffMaskCriteria(Tree* tree, Node* node, int64_t mask1, int64_t mask2,
         ChangeColor(stdout, DEFAULT_COLOR);
 
         PrintWithVoiceInCmd(" - ");
-        PrintMaskCriteria(node,  mask1, h);
+        PrintMaskCriteria(node,  mask1, height);
 
         PrintWithVoiceInCmd("\n" "Зато ");
 
@@ -162,7 +162,7 @@ void PrintDiffMaskCriteria(Tree* tree, Node* node, int64_t mask1, int64_t mask2,
         PrintWithVoiceInCmd("%s ", obj1);
         ChangeColor(stdout, DEFAULT_COLOR);
 
-        PrintMaskCriteria(node,  mask2, h);
+        PrintMaskCriteria(node,  mask2, height);
         return;
     }
 
