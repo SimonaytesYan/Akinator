@@ -5,17 +5,19 @@
 
 enum COLORS
 {
-    DEFAULT   = 0,
-    RED       = 31,
-    GREEN     = 32,
-    YELLOW    = 33,
-    BLUE      = 34,
-    PURPLE    = 35,
-    TURQUOISE = 36,
+    DEFAULT_COLOR   = 0,
+    RED             = 31,
+    GREEN           = 32,
+    YELLOW          = 33,
+    BLUE            = 34,
+    PURPLE          = 35,
+    TURQUOISE       = 36,
 };
 
 void InitConsole();
 
 void ChangeColor(FILE* stream, size_t color);
+
+void PrintInColor(FILE* stream, size_t color, const char* format, ...);
 
 #endif //__CONSOLE_SETTINGS_SYM__

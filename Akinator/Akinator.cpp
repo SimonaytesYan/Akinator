@@ -12,7 +12,7 @@
 
 //#define DEBUG
 
-//#define VOICE_COMMANDS
+#define VOICE_COMMANDS
 
 const char  VOICE_COMAND_PROTOTIPE[] = "echo \"%s\" | festival --language russian --tts 2>console.log";
 const int   DENIALS_NUMBER           = 6;
@@ -61,7 +61,7 @@ static void PrintWithVoiceInCmd(const char *const format, ...)
     va_end(args);
 }
 
-int CleanBuffer()
+static int CleanBuffer()
 {
 	int cnt = 0;
 	while ((getchar()) != '\n') 
@@ -110,11 +110,11 @@ void KnowObjDiff(Tree* tree)
     PrintWithVoiceInCmd("**********************************\n");
     ChangeColor(stdout, TURQUOISE);
     PrintWithVoiceInCmd("%s", object1);
-    ChangeColor(stdout, DEFAULT);
+    ChangeColor(stdout, DEFAULT_COLOR);
     PrintWithVoiceInCmd(" и ");
     ChangeColor(stdout, TURQUOISE);
     PrintWithVoiceInCmd("%s", object2);
-    ChangeColor(stdout, DEFAULT);
+    ChangeColor(stdout, DEFAULT_COLOR);
     PrintWithVoiceInCmd(" похожи тем, что и тот и другой\n");
 
     PrintDiffMaskCriteria(tree, tree->root, mask1, mask2, 0, object1, object2);
@@ -123,29 +123,29 @@ void KnowObjDiff(Tree* tree)
     printf("\n");
 }
 
-void PrintDiffMaskCriteria(Tree* tree, Node* node, int64_t mask1, int64_t mask2, int64_t h, char obj1[], char obj2[])
+void PrintDiffMaskCriteria(Tree* tree, Node* node, int64_t mask1, int64_t mask2, int64_t height, char obj1[], char obj2[])
 {
     if (node == nullptr)
         return;
 
-    if ((mask1 & (1 << h)) != ((mask2) & (1 << h)))
+    if ((mask1 & (1 << height)) != ((mask2) & (1 << height)))
     {
         printf("\n");
         PrintWithVoiceInCmd("Объект ");
         ChangeColor(stdout, TURQUOISE);
         PrintWithVoiceInCmd("%s", obj1);
-        ChangeColor(stdout, DEFAULT);
+        ChangeColor(stdout, DEFAULT_COLOR);
         PrintWithVoiceInCmd(" отличается от ");
 
         ChangeColor(stdout, TURQUOISE);
         PrintWithVoiceInCmd("%s", obj2);
-        ChangeColor(stdout, DEFAULT);
+        ChangeColor(stdout, DEFAULT_COLOR);
         
         PrintWithVoiceInCmd(" тем, что ");
         
         ChangeColor(stdout, TURQUOISE);
         PrintWithVoiceInCmd("%s", obj1);
-        ChangeColor(stdout, DEFAULT);
+        ChangeColor(stdout, DEFAULT_COLOR);
 
         PrintWithVoiceInCmd(" - ");
         PrintMaskCriteria(node,  mask1, h);
@@ -154,30 +154,30 @@ void PrintDiffMaskCriteria(Tree* tree, Node* node, int64_t mask1, int64_t mask2,
 
         ChangeColor(stdout, TURQUOISE);
         PrintWithVoiceInCmd("%s", obj2);
-        ChangeColor(stdout, DEFAULT);
+        ChangeColor(stdout, DEFAULT_COLOR);
 
         PrintWithVoiceInCmd(", в отличие от ");
 
         ChangeColor(stdout, TURQUOISE);
         PrintWithVoiceInCmd("%s ", obj1);
-        ChangeColor(stdout, DEFAULT);
+        ChangeColor(stdout, DEFAULT_COLOR);
 
         PrintMaskCriteria(node,  mask2, h);
         return;
     }
 
-    if (mask1 & (1 << h))
+    if (mask1 & (1 << height))
     {
         PrintWithVoiceInCmd(" %s; ", node->val);
 
-        PrintDiffMaskCriteria(tree, node->left, mask1, mask2, h + 1, obj1, obj2);
+        PrintDiffMaskCriteria(tree, node->left, mask1, mask2, height + 1, obj1, obj2);
     }
     else
     {
         PrintRandDenialCmd();
         PrintWithVoiceInCmd(" %s; ", node->val);
         
-        PrintDiffMaskCriteria(tree, node->right, mask1, mask2, h + 1, obj1, obj2);
+        PrintDiffMaskCriteria(tree, node->right, mask1, mask2, height + 1, obj1, obj2);
     }
 }
 
@@ -200,13 +200,13 @@ void DetermineObject(Tree* tree)
         
         ChangeColor(stdout, RED);
         PrintWithVoiceInCmd("жулик!\n");
-        ChangeColor(stdout, DEFAULT);
+        ChangeColor(stdout, DEFAULT_COLOR);
     }
     else
     {
         ChangeColor(stdout, TURQUOISE);        
         PrintWithVoiceInCmd("%s", object);
-        ChangeColor(stdout, DEFAULT);
+        ChangeColor(stdout, DEFAULT_COLOR);
         PrintWithVoiceInCmd(" - это");
         PrintMaskCriteria(tree->root, mask, 0);
     }
@@ -376,14 +376,17 @@ static void GetLine(FILE* fp, char string[], int num)
         new_line_symb = strchr(string, '\n');
         if (new_line_symb != nullptr)
             *new_line_symb = '\0';
-
-        #ifdef DEBUG
-            int len = strlen(string);
-            for(int i = 0; i < len; i++)
-                printf("%d ", string[i]);
-        #endif
     }
     while(new_line_symb == nullptr || strlen(string) == 0);
+    
+    #ifdef DEBUG
+        int i = 0;
+        while(string[i] != '\0')
+        {
+            printf("<%>%d", string[i], string[i]);
+            i++;
+        }
+    #endif
 }
 
 void AddNewObjectAndCrit(Tree* tree, Node* node)
@@ -391,19 +394,7 @@ void AddNewObjectAndCrit(Tree* tree, Node* node)
     char new_obj[MAX_CRIT_SIZE] = "";
     GetLine(stdin, new_obj, MAX_CRIT_SIZE);
                 
-    PrintWithVoiceInCmd("Чем ");
-    
-    ChangeColor(stdout, TURQUOISE);
-    PrintWithVoiceInCmd("%s", new_obj);
-    ChangeColor(stdout, DEFAULT); 
-    
-    PrintWithVoiceInCmd(" отличается от ");
-
-    ChangeColor(stdout, TURQUOISE);
-    PrintWithVoiceInCmd("%s", node->val);
-    ChangeColor(stdout, DEFAULT); 
-
-    PrintWithVoiceInCmd("?\n");
+    PrintWithVoiceInCmd("Чем %s отличается от %s?\n", new_obj, node->val);
 
     char new_criteria[MAX_CRIT_SIZE] = "";
     GetLine(stdin, new_criteria, MAX_CRIT_SIZE);
@@ -433,7 +424,7 @@ bool Akinate(Tree* tree, Node* node)
             printf("ans = <%s>\n", answer);
         #endif
 
-        if (StrCmpDifferenCases(answer, "да") == 0)
+        if (StrCmpDifferenCases(answer, "yes") == 0 || StrCmpDifferenCases(answer, "y") == 0)
         {
             if (node->left == nullptr)
             {
@@ -441,7 +432,7 @@ bool Akinate(Tree* tree, Node* node)
                 
                 ChangeColor(stdout, TURQUOISE);
                 PrintWithVoiceInCmd("%s", node->val);
-                ChangeColor(stdout, DEFAULT);
+                ChangeColor(stdout, DEFAULT_COLOR);
 
                 PrintWithVoiceInCmd(". Это было легко!!!\n");
 
@@ -450,7 +441,7 @@ bool Akinate(Tree* tree, Node* node)
 
             return Akinate(tree, node->left);
         }
-        if (StrCmpDifferenCases(answer, "нет") == 0)
+        if (StrCmpDifferenCases(answer, "no") == 0 || StrCmpDifferenCases(answer, "n") == 0)
         {
             if (node->right == nullptr)
             {
@@ -494,27 +485,27 @@ void RunAkinator(Tree* tree)
     while(true)
     {
         PrintWithVoiceInCmd("**********************************\n");
-        PrintWithVoiceInCmd("Режимы:\n");
+        printf("Режимы:\n");
         ChangeColor(stdout, GREEN);
-        PrintWithVoiceInCmd("-1");
-        ChangeColor(stdout, DEFAULT);
-        PrintWithVoiceInCmd(" - Выход из программы\n"); 
+        printf("-1");
+        ChangeColor(stdout, DEFAULT_COLOR);
+        printf(" - Выход из программы\n"); 
         ChangeColor(stdout, GREEN);
-        PrintWithVoiceInCmd("0");
-        ChangeColor(stdout, DEFAULT);
-        PrintWithVoiceInCmd("  - Угадать\n");
+        printf("0");
+        ChangeColor(stdout, DEFAULT_COLOR);
+        printf("  - Угадать\n");
         ChangeColor(stdout, GREEN);
-        PrintWithVoiceInCmd("1");
-        ChangeColor(stdout, DEFAULT);
-        PrintWithVoiceInCmd("  - Дать определение\n");
+        printf("1");
+        ChangeColor(stdout, DEFAULT_COLOR);
+        printf("  - Дать определение\n");
         ChangeColor(stdout, GREEN);
-        PrintWithVoiceInCmd("2");
-        ChangeColor(stdout, DEFAULT);
-        PrintWithVoiceInCmd("  - Сравнение\n");
+        printf("2");
+        ChangeColor(stdout, DEFAULT_COLOR);
+        printf("  - Сравнение\n");
         ChangeColor(stdout, GREEN);
-        PrintWithVoiceInCmd("3");
-        ChangeColor(stdout, DEFAULT);
-        PrintWithVoiceInCmd("  - Графический дамп\n");
+        printf("3");
+        ChangeColor(stdout, DEFAULT_COLOR);
+        printf("  - Графический дамп\n");
         PrintWithVoiceInCmd("**********************************\n");
 
         int operation_mode = -2;
