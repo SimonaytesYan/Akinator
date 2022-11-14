@@ -26,8 +26,6 @@ int  SaveTreeInFile(Tree* tree, const char file_name[]);
 
 int  GetTreeFromFile(Tree* tree, const char file_name[]);
 
-bool Akinate(Tree* tree, Node* node);
-
 void GetNodeFromFile(Node* node, void* fp_void);
 
 int StrCmpDifferenCases(const char* s1, const char* s2);

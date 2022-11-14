@@ -7,11 +7,16 @@
 #include "Akinator.h"
 #include "Libs/ConsoleSettings/ConsoleSettings.h"
 
+typedef Node* StackElem;
+
+#include "Libs/Stack/Stack.h"
+
 #ifdef _WIN32
 
-#define TX_USE_SPEAK 
-#include "Libs/TXLib.h"
-#include <stringapiset.h>
+    #include <stringapiset.h>
+
+    #define TX_USE_SPEAK 
+    #include "Libs/TXLib.h"
 
 #endif
 
@@ -19,7 +24,7 @@
 
 #define VOICE_COMMANDS
 
-const char  VOICE_COMAND_PROTOTIPE[] = "echo \"%s\" | festival --language russian --tts"; // 2>console.log
+const char  VOICE_COMAND_PROTOTIPE[] = "echo \"%s\" | festival --language russian --tts 2>console.log";
 const int   DENIALS_NUMBER           = 6;
 const char* DENIALS[]                = {"не",
                                         "вообще не",
@@ -49,7 +54,6 @@ const char* DENIALS[]                = {"не",
         return 0;
     }
 
-    
     static int ConvertUTF8To1251AndPrintf(const char *const format, ...)
     {
         va_list args;
@@ -68,6 +72,8 @@ const char* DENIALS[]                = {"не",
     }
 
 #endif
+
+bool Akinate(Tree* tree, Node* node, Stack* stack = nullptr);
 
 static void GetLine(FILE* fp, char string[], int num);
 
@@ -462,60 +468,127 @@ void AddNewObjectAndCrit(Tree* tree, Node* node)
     TreeInsertLeafRight(tree, node->val, node);
     
     strcpy(node->val, new_criteria);
-
 }
 
-bool Akinate(Tree* tree, Node* node)
+static bool GoYes(Tree* tree, Node* node, Stack* stack)
 {
-    PrintWithVoiceInCmd("%s?\n", node->val);
+    if (node->left == nullptr)
+    {
+        PrintWithVoiceInCmd("Это ");
+        
+        ChangeColor(stdout, TURQUOISE);
+        PrintWithVoiceInCmd("%s. ", node->val);
+        ChangeColor(stdout, DEFAULT_COLOR);
+        
+        PrintWithVoiceInCmd("Это было легко!!!\n");
 
-    char answer[MAX_CRIT_SIZE] = "";
+        StackDtor(stack);
+        free(stack);
+
+        return true;
+    }
+    return Akinate(tree, node->left, stack);
+}
+
+static bool GoNo(Tree* tree, Node* node, Stack* stack)
+{
+    if (node->right == nullptr)
+    {
+        if (stack->size != 0)
+        { 
+            Node* next_node = StackPop(stack);
+
+            return Akinate(tree, next_node, stack);
+        }
+
+        StackDtor(stack);
+        free(stack);
+
+        PrintWithVoiceInCmd("Наконец-то достойный соперник! ");
+        PrintWithVoiceInCmd("Наше стражение стало легендарным!\n");
+        PrintWithVoiceInCmd("Кого ты загадал?\n");
+
+        AddNewObjectAndCrit(tree, node);
+
+        PrintWithVoiceInCmd("Теперь я стал сильнее! ");
+        PrintWithVoiceInCmd("В этот раз тебе не удасться победить!!!\n");
+
+        return true;
+    }
+
+    return Akinate(tree, node->right, stack);
+}
+
+bool Akinate(Tree* tree, Node* node, Stack* stack)
+{
+    if (node == nullptr)
+        return false;
+
+    if (stack == nullptr)
+    {
+        stack = (Stack*)calloc(sizeof(Stack), 1);
+    }
+
+    assert(tree);
+
+    ChangeColor(stdout, YELLOW);
+    PrintWithVoiceInCmd("%s?\n", node->val);
+    ChangeColor(stdout, DEFAULT_COLOR);
+
+    int answer = 0;
     while(true)
     {
-        GetLine(stdin, answer, MAX_CRIT_SIZE);
+        printf("**********************************\n");
+        printf("Ваш ответ:\n");
+        printf("1 - да\n");
+        printf("2 - возможно да\n");
+        printf("3 - возможно нет\n");
+        printf("4 - нет\n");
+        printf("5 - выход\n");
+
+        scanf("%d", &answer);
 
         #ifdef DEBUG
             printf("ans = <%s>\n", answer);
         #endif
 
-        if (StrCmpDifferenCases(answer, "yes") == 0 || StrCmpDifferenCases(answer, "y") == 0)
+        switch(answer)
         {
-            if (node->left == nullptr)
+            case 1:
             {
-                PrintWithVoiceInCmd("Это ");
-                
-                ChangeColor(stdout, TURQUOISE);
-                PrintWithVoiceInCmd("%s", node->val);
-                ChangeColor(stdout, DEFAULT_COLOR);
-
-                PrintWithVoiceInCmd(". Это было легко!!!\n");
-
-                return true;
+                return GoYes(tree, node, stack);
+                break;
             }
-
-            return Akinate(tree, node->left);
+            case 2:
+            {
+                StackPush(stack, node->right);
+                return GoYes(tree, node, stack);
+                break;
+            }
+            case 3:
+            {
+                StackPush(stack, node->left);
+                return GoNo(tree, node, stack);
+                break;
+            }
+            case 4:
+            {
+                return GoNo(tree, node, stack);
+                break;
+            }
+            case 5:
+            {
+                StackDtor(stack);
+                free(stack);
+                return false;
+                break;
+            }
+            default:
+            {
+                PrintWithVoiceInCmd("Неизвестная команда. Повторите ввод\n");
+                break;
+            }
         }
-        if (StrCmpDifferenCases(answer, "no") == 0 || StrCmpDifferenCases(answer, "n") == 0)
-        {
-            if (node->right == nullptr)
-            {
-                PrintWithVoiceInCmd("Наконец-то достойный соперник! ");
-                PrintWithVoiceInCmd("Наше стражение стало легендарным!\n");
-                PrintWithVoiceInCmd("Кого ты загадал?\n");
-
-                AddNewObjectAndCrit(tree, node);
-
-                PrintWithVoiceInCmd("Теперь я стал сильнее! ");
-                PrintWithVoiceInCmd("В этот раз тебе не удасться победить!!!\n");
-                return true;
-            }
-            else
-            {
-                return Akinate(tree, node->right);
-            }
-        }
-        if (StrCmpDifferenCases(answer, "выход") == 0)
-            return false;
     }
 }
 
