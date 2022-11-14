@@ -12,7 +12,7 @@ void InitConsole()
     setlocale(LC_ALL, "Russian");
 }
 
-void ChangeColor(FILE* stream, size_t color)
+void ChangeColor(FILE* stream, short unsigned int color)
 {
     assert(stream != nullptr);
 
@@ -20,11 +20,11 @@ void ChangeColor(FILE* stream, size_t color)
         HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
         SetConsoleTextAttribute(hConsole, color);
     #else
-        fprintf(stream, "\033[%ldm", color);
+        fprintf(stream, "\033[%dm", color);
     #endif
 }
 
-void PrintInColor(FILE* stream, size_t color, const char* format, ...)
+void PrintInColor(FILE* stream, short unsigned int color, const char* format, ...)
 {
     assert(stream != nullptr);
     assert(format != nullptr);

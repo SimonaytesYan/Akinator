@@ -29,8 +29,8 @@
 
 void InitConsole();
 
-void ChangeColor(FILE* stream, size_t color);
+void ChangeColor(FILE* stream, short unsigned int color);
 
-void PrintInColor(FILE* stream, size_t color, const char* format, ...);
+void PrintInColor(FILE* stream, short unsigned int color, const char* format, ...);
 
 #endif //__CONSOLE_SETTINGS_SYM__

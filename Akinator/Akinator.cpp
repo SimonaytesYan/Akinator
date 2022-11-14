@@ -24,6 +24,7 @@ typedef Node* StackElem;
 
 #define VOICE_COMMANDS
 
+const int   MAX_STRLEN_IN_PRINT = 1000;
 const char  VOICE_COMAND_PROTOTIPE[] = "echo \"%s\" | festival --language russian --tts 2>console.log";
 const int   DENIALS_NUMBER           = 6;
 const char* DENIALS[]                = {"не",
@@ -40,8 +41,6 @@ const char* DENIALS[]                = {"не",
 
     static int  ConvertUTF8To1251(const char* const str_UTF8, char* const str_1251);
 
-
-    const int MAX_STRLEN_IN_PRINT = 1000;
     #define printf(_Format, ...) ConvertUTF8To1251AndPrintf(_Format, ##__VA_ARGS__)
     
     static int ConvertUTF8To1251(const char* const str_UTF8, char* const str_1251)
@@ -95,7 +94,7 @@ static void PrintWithVoiceInCmd(const char *const format, ...)
     va_list args;
     va_start(args, format);
 
-    char output[MAX_CRIT_SIZE * MAX_CRIT_SIZE] = "";
+    char output[MAX_STRLEN_IN_PRINT] = "";
     vsprintf(output, format, args);
 
     printf("%s", output);
@@ -104,7 +103,7 @@ static void PrintWithVoiceInCmd(const char *const format, ...)
 
         #ifdef _WIN32
             ConvertUTF8To1251(output, output);
-            txSpeak(output);
+            txSpeak("%s", output);
         #else
             char comand[MAX_CRIT_SIZE * MAX_CRIT_SIZE + MAX_CRIT_SIZE] = "";
             sprintf(comand, VOICE_COMAND_PROTOTIPE, output);
@@ -427,23 +426,23 @@ int GetTreeFromFile(Tree* tree, const char file_name[])
     return 0;
 }
 
-static void GetLine(FILE* fp, char string[], int num)
+static void GetLine(FILE* fp, char str[], int num)
 {
     char* new_line_symb = nullptr;
     do 
     {
-        fgets(string, num, fp);
-        new_line_symb = strchr(string, '\n');
+        fgets(str, num, fp);
+        new_line_symb = strchr(str, '\n');
         if (new_line_symb != nullptr)
             *new_line_symb = '\0';
     }
-    while(new_line_symb == nullptr || strlen(string) == 0);
+    while(new_line_symb == nullptr || strlen(str) == 0);
     
     #ifdef DEBUG
         int i = 0;
-        while(string[i] != '\0')
+        while(str[i] != '\0')
         {
-            printf("<%>%d", string[i], string[i]);
+            printf("<%>%d", str[i], str[i]);
             i++;
         }
     #endif

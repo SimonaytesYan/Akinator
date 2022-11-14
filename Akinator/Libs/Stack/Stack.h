@@ -19,7 +19,7 @@ const int  HOW_MANY_ELEM_OUT = 10; //!This constant is used to determine how man
 
 const double    FOR_RESIZE  = 2; 
 const StackElem POISON      = (StackElem)0X7FFFFFFF;
-const void*     POISON_PTR  = (void*)13;
+void* const     POISON_PTR  = (void*)13;
 const uint64_t  LEFT_KENAR  = 0xABABABABADEADDED;
 const uint64_t  RIGHT_KENAR = (uint64_t)(-1)^LEFT_KENAR;
 
@@ -56,7 +56,7 @@ typedef struct Stack
 void   DumpStack(Stack *stk, int deep, const char function[], const char file[], int line);
 
 size_t    StackCheck(Stack* stk, int line, const char function[], const char file[]);
-size_t    StackConstructor(Stack* stk, int capacity, int line, const char function[], const char file[], const char name[]);
+size_t    StackConstructor(Stack* stk, size_t capacity, int line, const char function[], const char file[], const char name[]);
 size_t    StackDtor(Stack* stk);
 size_t    StackResizeUp(Stack* stk);
 size_t    StackPush(Stack* stk, StackElem value);
@@ -238,7 +238,7 @@ size_t StackCheck(Stack* stk, int line, const char function[], const char file[]
     if (error != 0)
     {
         for(size_t i = 0; i < 32; i++)
-            if (error & (1 << i))
+            if (error & ((size_t)1 << i))
                 LogPrintf(ERROR_DESCRIPTION_STACK[i]);
         LogPrintf("\n");
     }
@@ -247,7 +247,7 @@ size_t StackCheck(Stack* stk, int line, const char function[], const char file[]
     return error;
 }
 
-size_t StackConstructor(Stack* stk, int capacity, int line, const char function[], const char file[], const char name[]) 
+size_t StackConstructor(Stack* stk, size_t capacity, int line, const char function[], const char file[], const char name[]) 
 {
     size_t error = 0;
     *stk = {};
@@ -337,9 +337,9 @@ size_t StackResizeDown(Stack* stk)
 
     if (stk->size == 0)
         return NO_ERROR;
-    if (stk->capacity/(double)stk->size >= FOR_RESIZE*FOR_RESIZE)
+    if ((double)stk->capacity / (double)stk->size >= FOR_RESIZE*FOR_RESIZE)
     {
-        size_t error = ChangeStackData(stk, stk->capacity / FOR_RESIZE);
+        size_t error = ChangeStackData(stk, (size_t)((double)stk->capacity / FOR_RESIZE));
         if (error != 0)
             return error;
         Rehash(stk);
@@ -357,39 +357,31 @@ StackElem StackPop(Stack* stk, size_t *err = nullptr)
 
     if (stk->size > 0)
         stk->size--;
-    if (stk->size >= 0)
-    {
-        if (stk->capacity <= 0)
-        {
-            if (err != nullptr)
-                *err |= WRONG_CAPACITY;
-            return POISON;
-        }
-        StackElem result = stk->data[stk->size];
-        stk->data[stk->size] = POISON;
 
-        int now_error = 0;//StackResizeDown(stk);
+    if (stk->capacity <= 0)
+    {
         if (err != nullptr)
-            *err = now_error;
-        if (now_error != NO_ERROR)
-        {
-            OK_ASSERT(*stk);
-            return POISON;
-        }
-
-        return result;
-    }
-    else
-    {
-        OK_ASSERT(*stk);
-        if (err != nullptr) 
-            *err = WRONG_SIZE;
+            *err |= WRONG_CAPACITY;
         return POISON;
     }
+    StackElem result = stk->data[stk->size];
+    stk->data[stk->size] = POISON;
+
+    size_t now_error = StackResizeDown(stk);
+    if (err != nullptr)
+        *err = now_error;
+    if (now_error != NO_ERROR)
+    {
+        OK_ASSERT(*stk);
+        return POISON;
+    }
+
+    return result;
 }
 
 uint64_t GetStructHash(Stack* stk)
 {
+    assert(stk);
     #if (PROTECTION_LEVEL & HASH_PROTECTION)
         uint64_t old_hash = stk->struct_hash;
         stk->struct_hash = 0;
@@ -397,6 +389,7 @@ uint64_t GetStructHash(Stack* stk)
         stk->struct_hash = old_hash;
         return now_hash;
     #endif
+    return 0;
 }
 
 void Rehash(Stack* stk)

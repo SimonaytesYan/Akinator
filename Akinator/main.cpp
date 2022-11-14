@@ -8,7 +8,7 @@
 int main()
 {
     OpenHtmlLogFile("Akinator.html");
-    srand(time(0));
+    srand((unsigned int)time(0));
 
     #ifdef _WIN32
         InitConsole();
