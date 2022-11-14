@@ -1,9 +1,14 @@
 #ifndef __SYM_AKINATOR__
 #define __SYM_AKINATOR__
 
+//MAIN INCLUDES
+
 #include <stdio.h>
+#include <stdint.h>
 
 #include "Libs/Logging/Logging.h"
+
+//CONSTANSTS AND DEFINES FOR INCLUDING BINARY TREE
 
 const size_t MAX_CRIT_SIZE = 64;
 
@@ -14,6 +19,8 @@ const char DEFAULT_TREE_NAME[] = "Tree";
 void PrintElemInLog(char val[MAX_CRIT_SIZE]);
 
 #include "Libs/BinaryTree/BinaryTree.h"
+
+//FUNCTIONS PROTOTIPES
 
 int  SaveTreeInFile(Tree* tree, const char file_name[]);
 

@@ -1,6 +1,9 @@
 #include <locale.h>
 #include <assert.h>
 #include <stdarg.h>
+#ifdef _WIN32
+    #include <windows.h>
+#endif
 
 #include "ConsoleSettings.h"
 
@@ -13,7 +16,12 @@ void ChangeColor(FILE* stream, size_t color)
 {
     assert(stream != nullptr);
 
-    fprintf(stream, "\033[%ldm", color);
+    #ifdef _WIN32
+        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+        SetConsoleTextAttribute(hConsole, color);
+    #else
+        fprintf(stream, "\033[%ldm", color);
+    #endif
 }
 
 void PrintInColor(FILE* stream, size_t color, const char* format, ...)
@@ -24,7 +32,7 @@ void PrintInColor(FILE* stream, size_t color, const char* format, ...)
     va_list args;
     va_start(args, format);
 
-    fprintf(stream, "\033[%ldm", color);
+    ChangeColor(stream, color);
     vprintf(format, args);
-    fprintf(stream, "\033[%ldm", DEFAULT_COLOR);
+    ChangeColor(stream, DEFAULT_COLOR);
 } 

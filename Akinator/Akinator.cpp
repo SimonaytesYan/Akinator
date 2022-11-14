@@ -1,20 +1,25 @@
 #include <stdio.h>
-#include <stdarg.h>
 #include <unistd.h>
 #include <assert.h>
+#include <stdint.h>
+#include <stdarg.h>
 
 #include "Akinator.h"
 #include "Libs/ConsoleSettings/ConsoleSettings.h"
 
 #ifdef _WIN32
+
+#define TX_USE_SPEAK 
 #include "Libs/TXLib.h"
+#include <stringapiset.h>
+
 #endif
 
 //#define DEBUG
 
 #define VOICE_COMMANDS
 
-const char  VOICE_COMAND_PROTOTIPE[] = "echo \"%s\" | festival --language russian --tts 2>console.log";
+const char  VOICE_COMAND_PROTOTIPE[] = "echo \"%s\" | festival --language russian --tts"; // 2>console.log
 const int   DENIALS_NUMBER           = 6;
 const char* DENIALS[]                = {"не",
                                         "вообще не",
@@ -24,6 +29,46 @@ const char* DENIALS[]                = {"не",
                                         "ну вообще не",
                                         };
 
+#ifdef _WIN32 
+
+    static int ConvertUTF8To1251AndPrintf(const char *const format, ...);
+
+    static int  ConvertUTF8To1251(const char* const str_UTF8, char* const str_1251);
+
+
+    const int MAX_STRLEN_IN_PRINT = 1000;
+    #define printf(_Format, ...) ConvertUTF8To1251AndPrintf(_Format, ##__VA_ARGS__)
+    
+    static int ConvertUTF8To1251(const char* const str_UTF8, char* const str_1251)
+    {
+        wchar_t UTF16[MAX_STRLEN_IN_PRINT] = L"";
+        
+        MultiByteToWideChar(CP_UTF8, 0, str_UTF8, -1, UTF16,    MAX_STRLEN_IN_PRINT);
+        WideCharToMultiByte(CP_ACP,  0, UTF16,    -1, str_1251, MAX_STRLEN_IN_PRINT, NULL, NULL);
+        
+        return 0;
+    }
+
+    
+    static int ConvertUTF8To1251AndPrintf(const char *const format, ...)
+    {
+        va_list args;
+        va_start(args, format);
+        
+        char outputUTF8 [MAX_STRLEN_IN_PRINT] = "";
+        char output1251 [MAX_STRLEN_IN_PRINT] = "";
+
+        vsprintf(outputUTF8, format, args);
+        
+        ReturnIfError(ConvertUTF8To1251(outputUTF8, output1251));
+
+        fprintf(stdout, "%s", output1251);
+
+        return 0;
+    }
+
+#endif
+
 static void GetLine(FILE* fp, char string[], int num);
 
 static void PrintWithVoiceInCmd(const char *const format, ...);
@@ -31,6 +76,8 @@ static void PrintWithVoiceInCmd(const char *const format, ...);
 static int  CleanBuffer();
 
 static void PrintRandDenialCmd();
+
+static void PrintOperationMode();
 
 static void PrintRandDenialCmd()
 {
@@ -48,14 +95,21 @@ static void PrintWithVoiceInCmd(const char *const format, ...)
     printf("%s", output);
 
     #ifdef VOICE_COMMANDS
-        char comand[MAX_CRIT_SIZE * MAX_CRIT_SIZE + MAX_CRIT_SIZE] = "";
-        sprintf(comand, VOICE_COMAND_PROTOTIPE, output);
 
-        #ifdef DEBUG
-            printf(comand);
+        #ifdef _WIN32
+            ConvertUTF8To1251(output, output);
+            txSpeak(output);
+        #else
+            char comand[MAX_CRIT_SIZE * MAX_CRIT_SIZE + MAX_CRIT_SIZE] = "";
+            sprintf(comand, VOICE_COMAND_PROTOTIPE, output);
+
+            #ifdef DEBUG
+                printf(comand);
+            #endif
+            
+            system(comand);
         #endif
-        
-        system(comand);
+
     #endif
 
     va_end(args);
@@ -107,7 +161,7 @@ void KnowObjDiff(Tree* tree)
         printf("obj2 = <%s>\n", object2);
     #endif
     
-    PrintWithVoiceInCmd("**********************************\n");
+    printf("**********************************\n");
     ChangeColor(stdout, TURQUOISE);
     PrintWithVoiceInCmd("%s", object1);
     ChangeColor(stdout, DEFAULT_COLOR);
@@ -118,7 +172,7 @@ void KnowObjDiff(Tree* tree)
     PrintWithVoiceInCmd(" похожи тем, что и тот и другой\n");
 
     PrintDiffMaskCriteria(tree, tree->root, mask1, mask2, 0, object1, object2);
-    PrintWithVoiceInCmd("**********************************\n");
+    printf("**********************************\n");
     
     printf("\n");
 }
@@ -480,33 +534,38 @@ void OutputGraphicDump(Tree* tree)
     system(graphic_dump_file);
 }
 
+static void PrintOperationMode()
+{
+    printf("**********************************\n");
+    printf("Режимы:\n");
+    ChangeColor(stdout, GREEN);
+    printf("-1");
+    ChangeColor(stdout, DEFAULT_COLOR);
+    printf(" - Выход из программы\n"); 
+    ChangeColor(stdout, GREEN);
+    printf("0");
+    ChangeColor(stdout, DEFAULT_COLOR);
+    printf("  - Угадать\n");
+    ChangeColor(stdout, GREEN);
+    printf("1");
+    ChangeColor(stdout, DEFAULT_COLOR);
+    printf("  - Дать определение\n");
+    ChangeColor(stdout, GREEN);
+    printf("2");
+    ChangeColor(stdout, DEFAULT_COLOR);
+    printf("  - Сравнение\n");
+    ChangeColor(stdout, GREEN);
+    printf("3");
+    ChangeColor(stdout, DEFAULT_COLOR);
+    printf("  - Графический дамп\n");
+    printf("**********************************\n");
+}
+
 void RunAkinator(Tree* tree)
 {
     while(true)
     {
-        PrintWithVoiceInCmd("**********************************\n");
-        printf("Режимы:\n");
-        ChangeColor(stdout, GREEN);
-        printf("-1");
-        ChangeColor(stdout, DEFAULT_COLOR);
-        printf(" - Выход из программы\n"); 
-        ChangeColor(stdout, GREEN);
-        printf("0");
-        ChangeColor(stdout, DEFAULT_COLOR);
-        printf("  - Угадать\n");
-        ChangeColor(stdout, GREEN);
-        printf("1");
-        ChangeColor(stdout, DEFAULT_COLOR);
-        printf("  - Дать определение\n");
-        ChangeColor(stdout, GREEN);
-        printf("2");
-        ChangeColor(stdout, DEFAULT_COLOR);
-        printf("  - Сравнение\n");
-        ChangeColor(stdout, GREEN);
-        printf("3");
-        ChangeColor(stdout, DEFAULT_COLOR);
-        printf("  - Графический дамп\n");
-        PrintWithVoiceInCmd("**********************************\n");
+        PrintOperationMode();
 
         int operation_mode = -2;
         
@@ -559,4 +618,6 @@ void RunAkinator(Tree* tree)
 
         sleep(1);
     }
+
+    PrintWithVoiceInCmd("Спасибо за игру!\n");
 }

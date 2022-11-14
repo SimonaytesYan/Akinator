@@ -10,6 +10,10 @@ int main()
     OpenHtmlLogFile("Akinator.html");
     srand(time(0));
 
+    #ifdef _WIN32
+        InitConsole();
+    #endif
+    
     Tree tree = {};
     TreeCtor(&tree);
     GetTreeFromFile(&tree, DEFAULT_TREE_NAME);

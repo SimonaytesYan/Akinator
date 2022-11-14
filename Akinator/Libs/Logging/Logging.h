@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 
+//FUNCITONS PROTOTIPE
+
 int  OpenLogFile(const char* file_name);
 
 int  CloseLogFile();
@@ -13,6 +15,8 @@ int  OpenHtmlLogFile(const char* file_name);
 int  CloseHtmlLogFile();
 
 int  LogPrintf(const char *format, ...);
+
+//#DEFINES
 
 #define CHECK(cond, msg, return_code)                                                           \
     if (cond)                                                                                   \

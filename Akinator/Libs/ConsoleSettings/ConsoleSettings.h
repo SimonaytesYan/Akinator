@@ -3,16 +3,29 @@
 
 #include <stdio.h>
 
-enum COLORS
-{
-    DEFAULT_COLOR   = 0,
-    RED             = 31,
-    GREEN           = 32,
-    YELLOW          = 33,
-    BLUE            = 34,
-    PURPLE          = 35,
-    TURQUOISE       = 36,
-};
+#ifdef _WIN32
+    enum COLORS
+    {
+        DEFAULT_COLOR   = 7,
+        RED             = 12,
+        GREEN           = 10,
+        YELLOW          = 6,
+        BLUE            = 9,
+        PURPLE          = 13,
+        TURQUOISE       = 11,
+    };
+#else
+    enum COLORS
+    {
+        DEFAULT_COLOR   = 0,
+        RED             = 31,
+        GREEN           = 32,
+        YELLOW          = 33,
+        BLUE            = 34,
+        PURPLE          = 35,
+        TURQUOISE       = 36,
+    };
+#endif
 
 void InitConsole();
 
